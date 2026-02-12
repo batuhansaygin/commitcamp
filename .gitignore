@@ -24,7 +24,9 @@
 .DS_Store
 *.pem
 
-# .cursor/rules is intentionally committed for shared AI context and dev conventions
+# project docs and AI rules (local only)
+/md
+/.cursor/rules
 
 # debug
 npm-debug.log*
