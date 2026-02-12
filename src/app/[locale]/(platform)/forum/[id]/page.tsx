@@ -1,6 +1,6 @@
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
-import { BackButton } from "@/components/layout/back-button";
+import { Link } from "@/i18n/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { PostActions } from "@/components/forum/post-actions";
@@ -9,6 +9,8 @@ import { getPostById } from "@/lib/actions/posts";
 import { getComments } from "@/lib/actions/comments";
 import { createClient } from "@/lib/supabase/server";
 import { User, Calendar, CheckCircle2 } from "lucide-react";
+
+export const dynamic = "force-dynamic";
 
 interface PageProps {
   params: Promise<{ locale: string; id: string }>;
@@ -58,8 +60,6 @@ export default async function PostDetailPage({ params }: PageProps) {
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
-      <BackButton />
-
       {/* Post header */}
       <div className="space-y-3">
         <div className="flex items-center gap-2">
@@ -99,9 +99,18 @@ export default async function PostDetailPage({ params }: PageProps) {
             <User className="h-3.5 w-3.5" />
             <span>
               {t("by")}{" "}
-              <strong className="font-medium text-foreground">
-                {authorName}
-              </strong>
+              {post.profiles?.username ? (
+                <Link
+                  href={`/profile/${post.profiles.username}`}
+                  className="font-medium text-foreground hover:underline"
+                >
+                  {authorName}
+                </Link>
+              ) : (
+                <strong className="font-medium text-foreground">
+                  {authorName}
+                </strong>
+              )}
             </span>
           </div>
           <div className="flex items-center gap-1.5">
@@ -126,6 +135,7 @@ export default async function PostDetailPage({ params }: PageProps) {
           postId={post.id}
           isQuestion={post.type === "question"}
           isSolved={post.is_solved}
+          locale={locale}
         />
       )}
 

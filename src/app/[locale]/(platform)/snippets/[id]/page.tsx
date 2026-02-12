@@ -1,12 +1,14 @@
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
-import { BackButton } from "@/components/layout/back-button";
+import { Link } from "@/i18n/navigation";
 import { Badge } from "@/components/ui/badge";
 import { CodeBlock } from "@/components/snippets/code-block";
 import { SnippetActions } from "@/components/snippets/snippet-actions";
 import { getSnippetById } from "@/lib/actions/snippets";
 import { createClient } from "@/lib/supabase/server";
-import { User, Calendar } from "lucide-react";
+import { User, Calendar, Lock, Globe } from "lucide-react";
+
+export const dynamic = "force-dynamic";
 
 interface PageProps {
   params: Promise<{ locale: string; id: string }>;
@@ -47,13 +49,19 @@ export default async function SnippetDetailPage({ params }: PageProps) {
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
-      <BackButton />
-
       {/* Header */}
       <div className="space-y-3">
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-wrap items-start justify-between gap-2">
           <h1 className="text-2xl font-bold leading-tight">{snippet.title}</h1>
-          <Badge variant="secondary">{snippet.language}</Badge>
+          <div className="flex items-center gap-2">
+            {isAuthor && (
+              <Badge variant={snippet.is_public ? "default" : "secondary"} className="text-[10px]">
+                {snippet.is_public ? <Globe className="mr-1 h-3 w-3" /> : <Lock className="mr-1 h-3 w-3" />}
+                {snippet.is_public ? t("everyone") : t("onlyMe")}
+              </Badge>
+            )}
+            <Badge variant="secondary">{snippet.language}</Badge>
+          </div>
         </div>
 
         {snippet.description && (
@@ -65,7 +73,17 @@ export default async function SnippetDetailPage({ params }: PageProps) {
           <div className="flex items-center gap-1.5">
             <User className="h-3.5 w-3.5" />
             <span>
-              {t("by")} <strong className="font-medium text-foreground">{authorName}</strong>
+              {t("by")}{" "}
+              {snippet.profiles?.username ? (
+                <Link
+                  href={`/profile/${snippet.profiles.username}`}
+                  className="font-medium text-foreground hover:underline"
+                >
+                  {authorName}
+                </Link>
+              ) : (
+                <strong className="font-medium text-foreground">{authorName}</strong>
+              )}
             </span>
           </div>
           <div className="flex items-center gap-1.5">
@@ -79,7 +97,13 @@ export default async function SnippetDetailPage({ params }: PageProps) {
       <CodeBlock code={snippet.code} language={snippet.language} />
 
       {/* Actions (delete button for author) */}
-      {isAuthor && <SnippetActions snippetId={snippet.id} />}
+      {isAuthor && (
+        <SnippetActions
+          snippetId={snippet.id}
+          locale={locale}
+          isPublic={snippet.is_public}
+        />
+      )}
     </div>
   );
 }

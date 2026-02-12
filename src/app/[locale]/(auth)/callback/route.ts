@@ -2,9 +2,11 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
 export async function GET(request: Request) {
-  const { searchParams, origin } = new URL(request.url);
+  const url = new URL(request.url);
+  const { searchParams, origin } = url;
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/en";
+  const locale = url.pathname.split("/")[1] || "en";
+  const next = searchParams.get("next") ?? `/${locale}/feed`;
 
   if (code) {
     const supabase = await createClient();
@@ -15,5 +17,5 @@ export async function GET(request: Request) {
   }
 
   // If something went wrong, redirect to login with error
-  return NextResponse.redirect(`${origin}/en/login?error=auth_callback_error`);
+  return NextResponse.redirect(`${origin}/${locale}/login?error=auth_callback_error`);
 }

@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import { addComment } from "@/lib/actions/comments";
 import { Button } from "@/components/ui/button";
 import { User, Loader2, AlertCircle } from "lucide-react";
@@ -59,7 +60,16 @@ export function CommentSection({
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <div className="flex items-center gap-1.5">
                     <User className="h-3 w-3" />
-                    <span className="font-medium text-foreground">{name}</span>
+                    {comment.profiles?.username ? (
+                      <Link
+                        href={`/profile/${comment.profiles.username}`}
+                        className="font-medium text-foreground hover:underline"
+                      >
+                        {name}
+                      </Link>
+                    ) : (
+                      <span className="font-medium text-foreground">{name}</span>
+                    )}
                   </div>
                   <span>{timeAgo(comment.created_at)}</span>
                 </div>

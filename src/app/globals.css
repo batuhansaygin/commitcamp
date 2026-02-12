@@ -37,24 +37,24 @@
   --radius-xl: 1.25rem;
 }
 
-/* ── Light Theme ── */
+/* ── Light Theme (white, no gray surfaces) ── */
 :root {
-  --background: #fafafa;
+  --background: #ffffff;
   --foreground: #0a0a0f;
   --card: #ffffff;
   --card-foreground: #0a0a0f;
   --primary: #7c3aed;
   --primary-foreground: #ffffff;
-  --secondary: #f4f4f5;
+  --secondary: #faf5ff;
   --secondary-foreground: #18181b;
-  --muted: #f4f4f5;
-  --muted-foreground: #71717a;
-  --accent: #f4f4f5;
+  --muted: #faf5ff;
+  --muted-foreground: #1e293b;
+  --accent: #f5f3ff;
   --accent-foreground: #18181b;
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
-  --border: #e4e4e7;
-  --input: #e4e4e7;
+  --border: #ede9fe;
+  --input: #ede9fe;
   --ring: #7c3aed;
   --radius: 0.625rem;
   --sidebar-width: 270px;
@@ -100,7 +100,7 @@ body {
 }
 
 .glass {
-  background: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--border);

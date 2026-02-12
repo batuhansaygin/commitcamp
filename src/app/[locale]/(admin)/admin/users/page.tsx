@@ -1,6 +1,5 @@
 import { setRequestLocale } from "next-intl/server";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { BackButton } from "@/components/layout/back-button";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {

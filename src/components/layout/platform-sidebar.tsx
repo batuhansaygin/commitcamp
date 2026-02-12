@@ -3,6 +3,7 @@
 import { Link, usePathname } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { NotificationBadge } from "@/components/layout/notification-badge";
 import { X, Home, FileCode, MessageCircle, BookMarked, User, Wrench } from "lucide-react";
 
 interface PlatformSidebarProps {
@@ -10,11 +11,11 @@ interface PlatformSidebarProps {
   onClose: () => void;
 }
 
-const NAV_ITEMS = [
+const NAV_ITEMS: { href: string; icon: typeof Home; label: string; showBadge?: boolean }[] = [
   { href: "/feed", icon: Home, label: "Feed" },
   { href: "/snippets", icon: FileCode, label: "Snippets" },
   { href: "/forum", icon: MessageCircle, label: "Forum" },
-  { href: "/messages", icon: BookMarked, label: "Messages" },
+  { href: "/messages", icon: BookMarked, label: "Messages", showBadge: true },
   { href: "/settings", icon: User, label: "Settings" },
 ];
 
@@ -44,6 +45,7 @@ export function PlatformSidebar({ open, onClose }: PlatformSidebarProps) {
           {NAV_ITEMS.map((item) => {
             const isActive = pathname.startsWith(item.href);
             const Icon = item.icon;
+            const showBadge = item.showBadge === true;
             return (
               <Link
                 key={item.href}
@@ -58,6 +60,11 @@ export function PlatformSidebar({ open, onClose }: PlatformSidebarProps) {
               >
                 <Icon className="h-4 w-4" />
                 {item.label}
+                {showBadge && (
+                  <span className="ml-auto">
+                    <NotificationBadge />
+                  </span>
+                )}
               </Link>
             );
           })}

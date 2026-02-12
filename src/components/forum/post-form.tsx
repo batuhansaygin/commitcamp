@@ -8,7 +8,11 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2, AlertCircle } from "lucide-react";
 
-export function PostForm() {
+interface PostFormProps {
+  locale: string;
+}
+
+export function PostForm({ locale }: PostFormProps) {
   const t = useTranslations("forum");
   const [state, action, pending] = useActionState(createPost, {});
 
@@ -19,6 +23,7 @@ export function PostForm() {
       </CardHeader>
       <CardContent>
         <form action={action} className="space-y-4">
+          <input type="hidden" name="locale" value={locale} />
           {/* Error message */}
           {state.error && (
             <div className="flex items-center gap-2 rounded-lg border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">

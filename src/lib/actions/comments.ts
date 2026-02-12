@@ -74,6 +74,24 @@ export async function addComment(
     });
 
     if (error) return { error: error.message };
+
+    // Notify the post/snippet author (if not commenting on own content)
+    const table = targetType === "post" ? "posts" : "snippets";
+    const { data: target } = await supabase
+      .from(table)
+      .select("user_id")
+      .eq("id", targetId)
+      .single();
+    if (target?.user_id && target.user_id !== user.id) {
+      const path = targetType === "post" ? `/forum/${targetId}` : `/snippets/${targetId}`;
+      await supabase.from("notifications").insert({
+        user_id: target.user_id,
+        type: "comment",
+        title: "New comment",
+        body: parsed.data.content.slice(0, 100),
+        link: path,
+      });
+    }
   } catch {
     return { error: "You must be signed in to comment." };
   }

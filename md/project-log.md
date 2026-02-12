@@ -176,6 +176,29 @@ Auto-sync trigger: auth.users → profiles on signup.
 - **Supabase Realtime ready** — table structure supports real-time subscriptions
 - Build: 0 errors
 
+### 2026-02-12 — Profile "Send Message" + KVKK Note
+- **Profile page**: "Send Message" button added on other users' profiles (not shown on own profile).
+- **ProfileHeader**: Optional `messageButton` prop added; button links to `/messages/[username]`.
+- **i18n**: `profile.sendMessage` — EN: "Message", TR: "Mesaj Gönder".
+- **KVKK**: `md/kvkk-mesajlar.md` added — Summary of why storing messages in DB is not contrary to KVKK, and requirements for privacy notice, legal basis, security, and deletion policy.
+
+### 2026-02-12 — All Markdown in English
+- **Policy**: All `.md` files must be written in English; existing Turkish content translated to English.
+- **Updated**: `md/kvkk-mesajlar.md` — Full translation to English (KVKK doc).
+- **Updated**: `md/project-log.md` — Turkish bullet in "Profile Send Message" section translated to English.
+- **Rule**: `.cursor/rules/project-context.mdc` — Added "all .md content must be in English".
+
+### 2026-02-12 — Messaging via Discord (replace Stream Chat)
+- **Discord OAuth**: Messaging is via Discord; no in-app chat. Users enable “Allow private messages” in Settings and connect Discord; profile “Message” opens `https://discord.com/users/{discord_user_id}`.
+- **Migration**: `00007_profiles_discord_messaging.sql` — Adds `allow_private_messages`, `discord_user_id`, `discord_username` to `profiles`.
+- **API routes**: `GET /api/auth/discord` (redirect to Discord OAuth), `GET /api/auth/discord/callback` (exchange code, update profile, set `allow_private_messages = true`).
+- **Settings**: New “Messaging” card with “Allow private messages” switch; when on, “Connect with Discord” button (or “Connected as …” + Disconnect). `updateAllowPrivateMessages()`, `disconnectDiscord()` in `lib/actions/profiles.ts`.
+- **Profile**: “Message” button only if `profile.discord_user_id`; link is external to Discord user profile.
+- **Messages pages**: `/messages` is static CTA (Open Settings, Browse Forum); `/messages/[username]` redirects to Discord user URL or 404.
+- **Removed**: Stream Chat (package, `lib/stream`, `lib/actions/stream.ts`, stream-provider, messages-inbox, message-thread-stream, message-input-stream). Stream env vars removed from `.env.example`.
+- **Env**: `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET` (see `.env.example`). Redirect URI: `{origin}/api/auth/discord/callback`.
+- **UI**: Added `Label` and `Switch` components for settings.
+
 ## Architecture
 
 ### Route Structure (45 pages, EN/TR)

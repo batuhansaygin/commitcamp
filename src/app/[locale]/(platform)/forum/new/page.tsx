@@ -1,5 +1,4 @@
 import { setRequestLocale } from "next-intl/server";
-import { BackButton } from "@/components/layout/back-button";
 import { PostForm } from "@/components/forum/post-form";
 import type { Metadata } from "next";
 
@@ -15,8 +14,7 @@ export default async function NewPostPage({ params }: PageProps) {
 
   return (
     <div className="mx-auto max-w-3xl space-y-4">
-      <BackButton />
-      <PostForm />
+      <PostForm locale={locale} />
     </div>
   );
 }

@@ -6,6 +6,9 @@ export interface Profile {
   bio: string | null;
   avatar_url: string | null;
   role: "user" | "moderator" | "admin";
+  allow_private_messages: boolean;
+  discord_user_id: string | null;
+  discord_username: string | null;
   created_at: string;
   updated_at: string;
 }

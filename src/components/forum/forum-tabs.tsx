@@ -4,9 +4,11 @@ import { useTranslations } from "next-intl";
 import { useRouter, usePathname } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import type { PostType } from "@/lib/types/posts";
+import type { ForumView } from "./forum-view-switcher";
 
 interface ForumTabsProps {
   activeType?: PostType;
+  currentView?: ForumView;
 }
 
 const TABS: { key: string; type?: PostType }[] = [
@@ -16,17 +18,21 @@ const TABS: { key: string; type?: PostType }[] = [
   { key: "types.showcase", type: "showcase" },
 ];
 
-export function ForumTabs({ activeType }: ForumTabsProps) {
+export function ForumTabs({ activeType, currentView }: ForumTabsProps) {
   const t = useTranslations("forum");
   const router = useRouter();
   const pathname = usePathname();
 
+  const buildUrl = (type?: PostType) => {
+    const params = new URLSearchParams();
+    if (type) params.set("type", type);
+    if (currentView === "flow") params.set("view", "flow");
+    const q = params.toString();
+    return q ? `${pathname}?${q}` : pathname;
+  };
+
   const navigate = (type?: PostType) => {
-    if (type) {
-      router.push(`${pathname}?type=${type}`);
-    } else {
-      router.push(pathname);
-    }
+    router.push(buildUrl(type));
   };
 
   return (

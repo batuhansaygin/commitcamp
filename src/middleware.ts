@@ -55,10 +55,10 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // 5. Redirect logged-in users away from auth pages
+  // 5. Redirect logged-in users away from auth pages to feed
   if (user && (pathname.includes("/login") || pathname.includes("/signup"))) {
     const locale = pathname.split("/")[1] || routing.defaultLocale;
-    return NextResponse.redirect(new URL(`/${locale}`, request.url));
+    return NextResponse.redirect(new URL(`/${locale}/feed`, request.url));
   }
 
   return intlResponse;

@@ -1,7 +1,5 @@
 import { setRequestLocale } from "next-intl/server";
 import { Header } from "@/components/layout/header";
-import { BackButton } from "@/components/layout/back-button";
-
 interface AdminLayoutProps {
   children: React.ReactNode;
   params: Promise<{ locale: string }>;
@@ -18,9 +16,6 @@ export default async function AdminLayout({ children, params }: AdminLayoutProps
         {/* Admin Sidebar */}
         <aside className="hidden w-60 border-r border-border bg-card/50 md:block">
           <div className="p-4">
-            <div className="mb-4">
-              <BackButton />
-            </div>
             <h2 className="mb-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Admin Panel
             </h2>

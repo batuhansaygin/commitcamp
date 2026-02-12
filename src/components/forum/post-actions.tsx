@@ -3,17 +3,19 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
+import { Link } from "@/i18n/navigation";
 import { deletePost, toggleSolved } from "@/lib/actions/posts";
 import { Button } from "@/components/ui/button";
-import { Trash2, Loader2, CheckCircle2 } from "lucide-react";
+import { Trash2, Loader2, CheckCircle2, Pencil } from "lucide-react";
 
 interface PostActionsProps {
   postId: string;
   isQuestion: boolean;
   isSolved: boolean;
+  locale: string;
 }
 
-export function PostActions({ postId, isQuestion, isSolved }: PostActionsProps) {
+export function PostActions({ postId, isQuestion, isSolved, locale }: PostActionsProps) {
   const t = useTranslations("forum");
   const router = useRouter();
   const [confirming, setConfirming] = useState(false);
@@ -27,7 +29,7 @@ export function PostActions({ postId, isQuestion, isSolved }: PostActionsProps) 
       return;
     }
     setDeleting(true);
-    await deletePost(postId);
+    await deletePost(postId, locale);
   };
 
   const handleToggleSolved = async () => {
@@ -41,7 +43,15 @@ export function PostActions({ postId, isQuestion, isSolved }: PostActionsProps) 
   };
 
   return (
-    <div className="flex items-center gap-2 border-t border-border pt-4">
+    <div className="flex flex-wrap items-center gap-2 border-t border-border pt-4">
+      {/* Edit */}
+      <Link href={`/forum/${postId}/edit`}>
+        <Button variant="outline" size="sm" className="text-xs">
+          <Pencil className="mr-1 h-3 w-3" />
+          {t("editPost")}
+        </Button>
+      </Link>
+
       {/* Toggle solved for questions */}
       {isQuestion && (
         <Button

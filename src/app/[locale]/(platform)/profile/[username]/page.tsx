@@ -1,7 +1,7 @@
 import { setRequestLocale, getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
-import { BackButton } from "@/components/layout/back-button";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ProfileHeader } from "@/components/profile/profile-header";
 import { FollowButton } from "@/components/profile/follow-button";
@@ -9,7 +9,7 @@ import { getProfileByUsername, getUserSnippets, getUserPosts } from "@/lib/actio
 import { isFollowing } from "@/lib/actions/follows";
 import { createClient } from "@/lib/supabase/server";
 import { Link } from "@/i18n/navigation";
-import { Code2, MessageSquareText, CheckCircle2 } from "lucide-react";
+import { Code2, MessageSquareText, CheckCircle2, Pencil } from "lucide-react";
 
 interface PageProps {
   params: Promise<{ locale: string; username: string }>;
@@ -47,11 +47,33 @@ export default async function ProfilePage({ params }: PageProps) {
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
-      <BackButton />
-
-      {/* Profile header with follow button */}
+      {/* Profile header with follow and message buttons */}
       <ProfileHeader
         profile={profile}
+        editButton={
+          isOwnProfile ? (
+            <Button variant="outline" size="sm" asChild>
+              <Link href="/settings">
+                <Pencil className="mr-2 h-4 w-4" />
+                {t("editProfile")}
+              </Link>
+            </Button>
+          ) : undefined
+        }
+        messageButton={
+          user && !isOwnProfile && profile.discord_user_id ? (
+            <Button variant="outline" size="sm" asChild>
+              <a
+                href={`https://discord.com/users/${profile.discord_user_id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <MessageSquareText className="mr-2 h-4 w-4" />
+                {t("sendMessage")}
+              </a>
+            </Button>
+          ) : undefined
+        }
         followButton={
           user && !isOwnProfile ? (
             <FollowButton

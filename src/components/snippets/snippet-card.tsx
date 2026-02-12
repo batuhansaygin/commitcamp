@@ -27,11 +27,12 @@ export function SnippetCard({ snippet }: SnippetCardProps) {
     snippet.profiles?.display_name ||
     snippet.profiles?.username ||
     "Anonymous";
+  const authorUsername = snippet.profiles?.username;
 
   return (
-    <Link href={`/snippets/${snippet.id}`}>
-      <Card className="group transition-colors hover:border-primary/30 hover:bg-muted/30">
-        <CardContent className="p-4 space-y-3">
+    <Card className="group transition-colors hover:border-primary/30 hover:bg-muted/30">
+      <CardContent className="p-4 space-y-3">
+        <Link href={`/snippets/${snippet.id}`} className="block space-y-3">
           {/* Title + language badge */}
           <div className="flex items-start justify-between gap-3">
             <h3 className="font-semibold text-sm leading-snug line-clamp-1 group-hover:text-primary transition-colors">
@@ -55,17 +56,26 @@ export function SnippetCard({ snippet }: SnippetCardProps) {
               {snippet.code}
             </pre>
           </div>
+        </Link>
 
-          {/* Footer: author + time */}
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <div className="flex items-center gap-1.5">
-              <User className="h-3 w-3" />
+        {/* Footer: author (link to profile) + time */}
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <div className="flex items-center gap-1.5">
+            <User className="h-3 w-3" />
+            {authorUsername ? (
+              <Link
+                href={`/profile/${authorUsername}`}
+                className="hover:text-primary hover:underline"
+              >
+                {authorName}
+              </Link>
+            ) : (
               <span>{authorName}</span>
-            </div>
-            <span>{timeAgo(snippet.created_at)}</span>
+            )}
           </div>
-        </CardContent>
-      </Card>
-    </Link>
+          <span>{timeAgo(snippet.created_at)}</span>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

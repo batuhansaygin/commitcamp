@@ -22,7 +22,7 @@ async function getAuthenticatedUser() {
 
 // ── Queries (read-only) ──
 
-/** Fetch public snippets with author info, ordered newest first. */
+/** Fetch snippets with author info (public + current user's private). RLS enforces visibility. */
 export async function getSnippets(limit = 20, offset = 0) {
   const supabase = await createClient();
 
@@ -34,7 +34,6 @@ export async function getSnippets(limit = 20, offset = 0) {
       profiles:user_id ( username, display_name, avatar_url )
     `
     )
-    .eq("is_public", true)
     .order("created_at", { ascending: false })
     .range(offset, offset + limit - 1);
 
@@ -99,12 +98,15 @@ export async function createSnippet(
     return { error: "You must be signed in to create a snippet." };
   }
 
-  // Redirect outside try/catch — Next.js throws a special error for redirect
-  redirect(`/snippets/${snippetId}`);
+  const locale = (formData.get("locale") as string) || "en";
+  redirect(`/${locale}/snippets/${snippetId}`);
 }
 
 /** Delete a snippet the current user owns. */
-export async function deleteSnippet(id: string): Promise<ActionResult> {
+export async function deleteSnippet(
+  id: string,
+  locale: string = "en"
+): Promise<ActionResult> {
   try {
     const { supabase, user } = await getAuthenticatedUser();
 
@@ -119,5 +121,26 @@ export async function deleteSnippet(id: string): Promise<ActionResult> {
     return { error: "You must be signed in to delete a snippet." };
   }
 
-  redirect("/snippets");
+  redirect(`/${locale}/snippets`);
+}
+
+/** Update snippet visibility (public = everyone, private = only you). */
+export async function updateSnippetVisibility(
+  id: string,
+  isPublic: boolean
+): Promise<{ error?: string }> {
+  try {
+    const { supabase, user } = await getAuthenticatedUser();
+
+    const { error } = await supabase
+      .from("snippets")
+      .update({ is_public: isPublic })
+      .eq("id", id)
+      .eq("user_id", user.id);
+
+    if (error) return { error: error.message };
+    return {};
+  } catch {
+    return { error: "Unauthorized" };
+  }
 }

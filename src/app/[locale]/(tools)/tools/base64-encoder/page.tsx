@@ -1,7 +1,6 @@
 import { setRequestLocale } from "next-intl/server";
 import { useTranslations } from "next-intl";
 import { Base64Encoder } from "@/components/tools/base64-encoder";
-import { BackButton } from "@/components/layout/back-button";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -23,12 +22,9 @@ function Base64EncoderContent() {
   const t = useTranslations("tools.base64Encoder");
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-3">
-        <BackButton />
-        <div>
-          <h1 className="text-lg font-bold">{t("title")}</h1>
-          <p className="text-xs text-muted-foreground">{t("description")}</p>
-        </div>
+      <div>
+        <h1 className="text-lg font-bold">{t("title")}</h1>
+        <p className="text-xs text-muted-foreground">{t("description")}</p>
       </div>
       <Base64Encoder />
     </div>

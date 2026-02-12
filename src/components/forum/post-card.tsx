@@ -1,11 +1,15 @@
 import { Link } from "@/i18n/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { User, MessageSquare, CheckCircle2 } from "lucide-react";
+import { User, CheckCircle2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import type { PostWithAuthor } from "@/lib/types/posts";
+
+export type PostCardVariant = "grid" | "flow";
 
 interface PostCardProps {
   snippet: PostWithAuthor;
+  variant?: PostCardVariant;
 }
 
 const TYPE_VARIANTS: Record<string, "default" | "info" | "warning"> = {
@@ -28,16 +32,38 @@ function timeAgo(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString();
 }
 
-export function PostCard({ snippet: post }: PostCardProps) {
+export function PostCard({
+  snippet: post,
+  variant = "grid",
+}: PostCardProps) {
   const authorName =
     post.profiles?.display_name || post.profiles?.username || "Anonymous";
+  const authorUsername = post.profiles?.username;
+  const isFlow = variant === "flow";
 
   return (
-    <Link href={`/forum/${post.id}`}>
-      <Card className="group transition-colors hover:border-primary/30 hover:bg-muted/30">
-        <CardContent className="p-4 space-y-3">
+    <Card
+      className={cn(
+        "group transition-colors hover:border-primary/30 hover:bg-muted/30",
+        isFlow && "border-border"
+      )}
+    >
+      <CardContent
+        className={cn(
+          "p-4 space-y-3",
+          isFlow &&
+            "flex flex-row flex-wrap items-center gap-x-3 gap-y-1 py-3 sm:flex-nowrap"
+        )}
+      >
+        <Link
+          href={`/forum/${post.id}`}
+          className={cn(
+            "block space-y-3",
+            isFlow && "flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1"
+          )}
+        >
           {/* Type badge + solved indicator */}
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             <Badge
               variant={TYPE_VARIANTS[post.type] ?? "default"}
               className="text-[10px]"
@@ -52,40 +78,64 @@ export function PostCard({ snippet: post }: PostCardProps) {
             )}
           </div>
 
-          {/* Title */}
-          <h3 className="font-semibold text-sm leading-snug line-clamp-2 group-hover:text-primary transition-colors">
-            {post.title}
-          </h3>
-
-          {/* Content preview */}
-          <p className="text-xs text-muted-foreground line-clamp-2">
-            {post.content}
-          </p>
-
-          {/* Tags */}
-          {post.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1">
-              {post.tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground"
-                >
-                  #{tag}
-                </span>
-              ))}
-            </div>
-          )}
-
-          {/* Footer: author + time */}
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <div className="flex items-center gap-1.5">
-              <User className="h-3 w-3" />
-              <span>{authorName}</span>
-            </div>
-            <span>{timeAgo(post.created_at)}</span>
+          {/* Title + content + tags */}
+          <div
+            className={cn(
+              "min-w-0 flex-1",
+              isFlow ? "flex flex-wrap items-center gap-x-2 gap-y-0.5" : "space-y-1"
+            )}
+          >
+            <h3
+              className={cn(
+                "font-semibold leading-snug group-hover:text-primary transition-colors",
+                isFlow ? "text-sm line-clamp-1" : "text-sm line-clamp-2"
+              )}
+            >
+              {post.title}
+            </h3>
+            {!isFlow && (
+              <p className="text-xs text-muted-foreground line-clamp-2">
+                {post.content}
+              </p>
+            )}
+            {post.tags.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {post.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground"
+                  >
+                    #{tag}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
-        </CardContent>
-      </Card>
-    </Link>
+        </Link>
+
+        {/* Footer: author (link to profile) + time */}
+        <div
+          className={cn(
+            "flex items-center justify-between text-xs text-muted-foreground",
+            isFlow && "w-full shrink-0 sm:w-auto sm:justify-end"
+          )}
+        >
+          <div className="flex items-center gap-1.5">
+            <User className="h-3 w-3 shrink-0" />
+            {authorUsername ? (
+              <Link
+                href={`/profile/${authorUsername}`}
+                className="truncate hover:text-primary hover:underline"
+              >
+                {authorName}
+              </Link>
+            ) : (
+              <span className="truncate">{authorName}</span>
+            )}
+          </div>
+          <span className="shrink-0">{timeAgo(post.created_at)}</span>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

@@ -1,17 +1,23 @@
 "use client";
 
+import { useState } from "react";
 import { useActionState } from "react";
 import { useTranslations } from "next-intl";
 import { createSnippet } from "@/lib/actions/snippets";
 import { SNIPPET_LANGUAGES } from "@/lib/types/snippets";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Loader2, AlertCircle } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Loader2, AlertCircle, Globe, Lock } from "lucide-react";
 
-export function SnippetForm() {
+interface SnippetFormProps {
+  locale: string;
+}
+
+export function SnippetForm({ locale }: SnippetFormProps) {
   const t = useTranslations("snippets");
   const [state, action, pending] = useActionState(createSnippet, {});
+  const [isPublic, setIsPublic] = useState(true);
 
   return (
     <Card>
@@ -20,6 +26,7 @@ export function SnippetForm() {
       </CardHeader>
       <CardContent>
         <form action={action} className="space-y-4">
+          <input type="hidden" name="locale" value={locale} />
           {/* Error message */}
           {state.error && (
             <div className="flex items-center gap-2 rounded-lg border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
@@ -111,19 +118,50 @@ export function SnippetForm() {
             />
           </div>
 
-          {/* Visibility */}
-          <div className="flex items-center gap-2">
-            <input
-              type="hidden"
-              name="is_public"
-              value="true"
-            />
-            <Badge variant="info" className="text-xs">
-              {t("publicSnippet")}
-            </Badge>
-            <span className="text-xs text-muted-foreground">
-              {t("publicNote")}
+          {/* Visibility: same pill style as forum grid/flow */}
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="text-xs font-medium text-muted-foreground">
+              {t("visibility")}
             </span>
+            <input type="hidden" name="is_public" value={isPublic ? "true" : "false"} />
+            <div
+              className="flex rounded-lg border border-border bg-muted/30 p-0.5"
+              role="group"
+              aria-label={t("visibility")}
+            >
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className={cn(
+                  "h-8 gap-1.5 px-2.5 text-xs font-medium transition-colors",
+                  isPublic
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+                onClick={() => setIsPublic(true)}
+                aria-pressed={isPublic}
+              >
+                <Globe className="h-3.5 w-3.5" />
+                {t("everyone")}
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className={cn(
+                  "h-8 gap-1.5 px-2.5 text-xs font-medium transition-colors",
+                  !isPublic
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+                onClick={() => setIsPublic(false)}
+                aria-pressed={!isPublic}
+              >
+                <Lock className="h-3.5 w-3.5" />
+                {t("onlyMe")}
+              </Button>
+            </div>
           </div>
 
           {/* Submit */}

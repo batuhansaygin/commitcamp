@@ -1,5 +1,4 @@
 import { setRequestLocale, getTranslations } from "next-intl/server";
-import { BackButton } from "@/components/layout/back-button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
@@ -25,12 +24,9 @@ export default async function SnippetsPage({ params }: PageProps) {
     <div className="mx-auto max-w-4xl space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <BackButton />
-          <div>
-            <h1 className="text-2xl font-bold">{t("title")}</h1>
-            <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
-          </div>
+        <div>
+          <h1 className="text-2xl font-bold">{t("title")}</h1>
+          <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
         </div>
         <Link href="/snippets/new">
           <Button size="sm">

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { updateProfileSchema } from "@/lib/validations/profiles";
 import type { Profile, ProfileWithStats } from "@/lib/types/profiles";
 
@@ -72,7 +73,44 @@ export async function getProfileByUsername(
   return { data: profileWithStats, error: null };
 }
 
-/** Fetch the current user's profile for settings. */
+/** Fetch profiles by ids (for messaging inbox: map Stream user id → username). */
+export async function getProfilesByIds(ids: string[]): Promise<{
+  data: Array<{ id: string; username: string; display_name: string | null; avatar_url: string | null }>;
+  error: string | null;
+}> {
+  if (ids.length === 0) return { data: [], error: null };
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, username, display_name, avatar_url")
+    .in("id", ids);
+  if (error) return { data: [], error: error.message };
+  return { data: (data ?? []) as Array<{ id: string; username: string; display_name: string | null; avatar_url: string | null }>, error: null };
+}
+
+/** Ensure a profile row exists for the current user (sync from auth if missing). */
+function buildProfileFromUser(user: { id: string; email?: string | null; user_metadata?: Record<string, unknown> }) {
+  const emailPart = (user.email ?? "").split("@")[0] || "user";
+  const usernameBase = `${emailPart}_${user.id.replace(/-/g, "").slice(0, 8)}`;
+  const username = usernameBase.toLowerCase().replace(/[^a-z0-9_-]/g, "");
+  const display_name =
+    (user.user_metadata?.full_name as string) ??
+    (user.user_metadata?.name as string) ??
+    emailPart;
+  const avatar_url =
+    (user.user_metadata?.avatar_url as string) ??
+    (user.user_metadata?.picture as string) ??
+    null;
+  const role =
+    user.user_metadata?.is_admin === true
+      ? "admin"
+      : typeof user.user_metadata?.role === "string"
+        ? user.user_metadata.role
+        : "user";
+  return { id: user.id, username, display_name, avatar_url, role };
+}
+
+/** Fetch the current user's profile for settings. Creates one from auth data if missing. */
 export async function getCurrentProfile(): Promise<{
   data: Profile | null;
   error: string | null;
@@ -80,11 +118,49 @@ export async function getCurrentProfile(): Promise<{
   try {
     const { supabase, user } = await getAuthenticatedUser();
 
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from("profiles")
       .select("*")
       .eq("id", user.id)
       .single();
+
+    // No profile row (e.g. trigger missed or legacy account) — create from auth user
+    if (!data) {
+      const profileRow = buildProfileFromUser(user);
+      const roleValue =
+        profileRow.role === "admin"
+          ? "admin"
+          : profileRow.role === "moderator"
+            ? "moderator"
+            : "user";
+
+      const { error: insertError } = await supabase.from("profiles").insert({
+        id: profileRow.id,
+        username: profileRow.username,
+        display_name: profileRow.display_name,
+        avatar_url: profileRow.avatar_url,
+        role: roleValue,
+      });
+
+      // Fallback with service-role client for legacy edge-cases
+      if (insertError) {
+        const admin = createAdminClient();
+        await admin.from("profiles").upsert(
+          {
+            id: profileRow.id,
+            username: profileRow.username,
+            display_name: profileRow.display_name,
+            avatar_url: profileRow.avatar_url,
+            role: roleValue,
+          },
+          { onConflict: "id" }
+        );
+      }
+
+      const res = await supabase.from("profiles").select("*").eq("id", user.id).single();
+      data = res.data as Profile | null;
+      error = res.error;
+    }
 
     if (error) return { data: null, error: error.message };
     return { data: data as Profile, error: null };
@@ -163,4 +239,42 @@ export async function updateProfile(
 
   revalidatePath("/settings");
   return { success: true };
+}
+
+/** Update allow private messages (Discord) toggle. */
+export async function updateAllowPrivateMessages(
+  allow: boolean
+): Promise<ActionResult> {
+  try {
+    const { supabase, user } = await getAuthenticatedUser();
+    const { error } = await supabase
+      .from("profiles")
+      .update({ allow_private_messages: allow })
+      .eq("id", user.id);
+    if (error) return { error: error.message };
+    revalidatePath("/settings");
+    return { success: true };
+  } catch {
+    return { error: "Not authenticated" };
+  }
+}
+
+/** Disconnect Discord and turn off allow private messages. */
+export async function disconnectDiscord(): Promise<ActionResult> {
+  try {
+    const { supabase, user } = await getAuthenticatedUser();
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        discord_user_id: null,
+        discord_username: null,
+        allow_private_messages: false,
+      })
+      .eq("id", user.id);
+    if (error) return { error: error.message };
+    revalidatePath("/settings");
+    return { success: true };
+  } catch {
+    return { error: "Not authenticated" };
+  }
 }

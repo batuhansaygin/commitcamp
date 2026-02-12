@@ -25,7 +25,7 @@ alwaysApply: true
 - **Theme**: next-themes (dark/light)
 - **Domain**: commitcamp.com
 
-## Database Schema (5 migrations, 8 tables)
+## Database Schema (6 migrations, 7 tables)
 1. profiles - extends auth.users (username, display_name, bio, avatar_url, role)
 2. snippets - code sharing (title, language, code, is_public)
 3. posts - forum (title, content, type, tags, is_solved)
@@ -33,7 +33,7 @@ alwaysApply: true
 5. reactions - polymorphic reactions (like/fire/rocket/heart)
 6. bookmarks - polymorphic bookmarks
 7. follows - follow system
-8. messages - DM with read_at
+(Messaging: via Discord — connect in Settings; profile “Message” opens Discord.)
 
 ## Route Structure
 ```
@@ -65,8 +65,8 @@ alwaysApply: true
 - Auto-sync trigger: auth.users → profiles on signup
 - Back button on all pages except landing page
 - Admin link in footer
-- MD files kept in /md folder at root
-- Supabase migrations managed by AI (never manual push)
+- MD files kept in /md folder at root; **all .md content must be in English** (translate any Turkish to English)
+- Supabase: AI always runs `npx supabase db push` after migrations — never tell the user to push manually
 
 ## Completed Phases
 - [x] Phase 1: Foundation + Tool Migration (all 8 tools)
@@ -74,7 +74,7 @@ alwaysApply: true
 - [x] Phase 2A: Code Sharing (snippets — full CRUD with server actions)
 - [x] Phase 2B: Forum + Comments (posts CRUD, type filter, comments)
 - [x] Phase 2C: Profiles + Follow + Feed (profile pages, settings, follow, feed)
-- [x] Phase 2D: Messaging (DM inbox, chat threads, read receipts)
+- [x] Phase 2D: Messaging (Discord OAuth link; allow private messages + Connect Discord in Settings)
 
 ## For Full History
 Read `md/project-log.md` for the complete development log.

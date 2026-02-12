@@ -18,7 +18,7 @@ These rules are non-negotiable. Follow them in EVERY task without exception.
 - Corporate-grade architecture: types, validations, actions, components — each in their proper place
 
 ## Rule 2: Supabase Migration Discipline
-- After creating any migration, ALWAYS push it automatically (`supabase db push`)
+- After creating any migration, the AI MUST run `npx supabase db push` immediately — never ask the user to run it manually
 - Before creating new migrations, ALWAYS check existing migrations for conflicts
 - If a migration fails or has issues, FIX it before moving on
 - NEVER create unnecessary tables or columns — every column must serve a purpose

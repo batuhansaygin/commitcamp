@@ -6,9 +6,11 @@ import type { ProfileWithStats } from "@/lib/types/profiles";
 interface ProfileHeaderProps {
   profile: ProfileWithStats;
   followButton?: React.ReactNode;
+  messageButton?: React.ReactNode;
+  editButton?: React.ReactNode;
 }
 
-export function ProfileHeader({ profile, followButton }: ProfileHeaderProps) {
+export function ProfileHeader({ profile, followButton, messageButton, editButton }: ProfileHeaderProps) {
   const initial = (
     profile.display_name || profile.username
   )
@@ -59,7 +61,11 @@ export function ProfileHeader({ profile, followButton }: ProfileHeaderProps) {
                   @{profile.username}
                 </p>
               </div>
-              {followButton}
+              <div className="flex items-center gap-2 shrink-0">
+                {editButton}
+                {messageButton}
+                {followButton}
+              </div>
             </div>
 
             {profile.bio && (

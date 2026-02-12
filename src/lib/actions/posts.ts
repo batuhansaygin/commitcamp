@@ -102,11 +102,59 @@ export async function createPost(
     return { error: "You must be signed in to create a post." };
   }
 
-  redirect(`/forum/${postId}`);
+  const locale = (formData.get("locale") as string) || "en";
+  redirect(`/${locale}/forum/${postId}`);
+}
+
+/** Update a post the current user owns. Redirects to the post page on success. */
+export async function updatePost(
+  _prevState: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const postId = formData.get("postId") as string;
+  const locale = (formData.get("locale") as string) || "en";
+  if (!postId) return { error: "Missing post ID." };
+
+  const raw = {
+    title: formData.get("title"),
+    content: formData.get("content"),
+    type: formData.get("type"),
+    tags: formData.get("tags"),
+  };
+
+  const parsed = createPostSchema.safeParse(raw);
+  if (!parsed.success) {
+    const firstIssue = parsed.error.issues[0];
+    return { error: firstIssue?.message ?? "Invalid input" };
+  }
+
+  try {
+    const { supabase, user } = await getAuthenticatedUser();
+
+    const { error } = await supabase
+      .from("posts")
+      .update({
+        title: parsed.data.title,
+        content: parsed.data.content,
+        type: parsed.data.type,
+        tags: parsed.data.tags,
+      })
+      .eq("id", postId)
+      .eq("user_id", user.id);
+
+    if (error) return { error: error.message };
+  } catch {
+    return { error: "You must be signed in to edit this post." };
+  }
+
+  redirect(`/${locale}/forum/${postId}`);
 }
 
 /** Delete a post the current user owns. */
-export async function deletePost(id: string): Promise<ActionResult> {
+export async function deletePost(
+  id: string,
+  locale: string = "en"
+): Promise<ActionResult> {
   try {
     const { supabase, user } = await getAuthenticatedUser();
 
@@ -121,7 +169,7 @@ export async function deletePost(id: string): Promise<ActionResult> {
     return { error: "You must be signed in to delete a post." };
   }
 
-  redirect("/forum");
+  redirect(`/${locale}/forum`);
 }
 
 /** Toggle the is_solved status on a question post the user owns. */
