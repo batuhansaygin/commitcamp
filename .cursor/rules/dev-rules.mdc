@@ -1,0 +1,36 @@
+---
+description: Mandatory development rules - MUST follow in every task
+globs: ["**/*"]
+alwaysApply: true
+---
+
+# Development Rules (MANDATORY)
+
+These rules are non-negotiable. Follow them in EVERY task without exception.
+
+## Rule 1: Professional Architecture — No Spaghetti Code
+- Follow SOLID principles in all code
+- Every file has a single clear responsibility
+- No unused code, components, or imports
+- No unnecessary abstractions or over-engineering
+- Front-end and back-end must be clean, readable, and professional
+- No dead code — if it's not used, don't create it
+- Corporate-grade architecture: types, validations, actions, components — each in their proper place
+
+## Rule 2: Supabase Migration Discipline
+- After creating any migration, ALWAYS push it automatically (`supabase db push`)
+- Before creating new migrations, ALWAYS check existing migrations for conflicts
+- If a migration fails or has issues, FIX it before moving on
+- NEVER create unnecessary tables or columns — every column must serve a purpose
+- NEVER deviate from the intended scope — stay focused on the task
+- Verify the migration was applied correctly after push
+- Table and column names MUST be professional, descriptive, and relevant to the domain
+  - Good: `snippets`, `user_id`, `is_public`, `created_at`, `target_type`
+  - Bad: `data`, `info`, `val`, `tmp`, `flag1`, `misc`
+  - Use snake_case, be specific, and make names self-documenting
+
+## Rule 3: Build Verification — Zero Tolerance for Errors
+- After completing ANY task, ALWAYS run `npm run build`
+- Fix ALL build errors before considering the task done
+- The task is NOT complete until the build passes with 0 errors
+- If build fails, diagnose and fix immediately — do not leave broken code

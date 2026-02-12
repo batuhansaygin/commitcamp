@@ -1,0 +1,246 @@
+{
+  "common": {
+    "appName": "CommitCamp",
+    "tagline": "Where developers commit to growth.",
+    "description": "Essential developer tools, code sharing, forum, and community — all in one platform.",
+    "getStarted": "Get Started",
+    "viewTools": "View Tools",
+    "backButton": "Back",
+    "loading": "Loading...",
+    "copy": "Copy",
+    "copied": "Copied!",
+    "clear": "Clear",
+    "generate": "Generate",
+    "encode": "Encode",
+    "decode": "Decode",
+    "convert": "Convert",
+    "sample": "Sample",
+    "format": "Format",
+    "minify": "Minify",
+    "language": "Language",
+    "theme": "Theme",
+    "darkMode": "Dark",
+    "lightMode": "Light",
+    "systemMode": "System"
+  },
+  "nav": {
+    "tools": "Tools",
+    "community": "Community",
+    "login": "Sign In",
+    "signup": "Sign Up",
+    "transform": "Transform",
+    "generate": "Generate",
+    "decode": "Decode"
+  },
+  "tools": {
+    "jsonFormatter": {
+      "title": "JSON Formatter",
+      "description": "Format, validate & minify JSON with syntax highlighting",
+      "inputTitle": "Input",
+      "inputSubtitle": "Paste or type your JSON here",
+      "outputTitle": "Output"
+    },
+    "regexTester": {
+      "title": "Regex Tester",
+      "description": "Test regular expressions with real-time match highlighting",
+      "patternTitle": "Pattern",
+      "patternSubtitle": "Enter your regular expression",
+      "testTitle": "Test String",
+      "testSubtitle": "Text to test against",
+      "resultsTitle": "Results",
+      "matchesFound": "{count} match(es) found"
+    },
+    "base64Encoder": {
+      "title": "Base64 / URL Encoder",
+      "description": "Encode & decode Base64 and URL strings instantly",
+      "plainText": "Plain Text",
+      "encoded": "Encoded",
+      "urlSafe": "URL-safe Base64"
+    },
+    "colorConverter": {
+      "title": "Color Converter",
+      "description": "Convert between HEX, RGB & HSL with palette generation",
+      "pickerTitle": "Color Picker",
+      "paletteTitle": "Palette Generator",
+      "recentTitle": "Recent Colors",
+      "complementary": "Complementary",
+      "analogous": "Analogous",
+      "triadic": "Triadic"
+    },
+    "uuidGenerator": {
+      "title": "UUID & Hash Generator",
+      "description": "Generate UUIDs and compute SHA-1, SHA-256, SHA-512 hashes",
+      "uuidTitle": "UUID v4 Generator",
+      "hashTitle": "Hash Generator",
+      "historyTitle": "Generation History",
+      "quantity": "Quantity",
+      "copyAll": "Copy All",
+      "computeHashes": "Compute Hashes"
+    },
+    "jwtDecoder": {
+      "title": "JWT Decoder",
+      "description": "Decode JSON Web Tokens and inspect header, payload & expiry",
+      "tokenTitle": "JWT Token",
+      "tokenSubtitle": "Paste your JSON Web Token below",
+      "header": "Header",
+      "payload": "Payload",
+      "signature": "Signature",
+      "expired": "Expired",
+      "valid": "Valid",
+      "noExpiry": "No expiry (exp) claim"
+    },
+    "timestampConverter": {
+      "title": "Timestamp Converter",
+      "description": "Convert between Unix timestamps and human-readable dates",
+      "currentTime": "Current Time",
+      "unixToHuman": "Unix → Human",
+      "humanToUnix": "Human → Unix",
+      "seconds": "Seconds",
+      "milliseconds": "Milliseconds",
+      "now": "Now"
+    },
+    "loremGenerator": {
+      "title": "Lorem Ipsum Generator",
+      "description": "Generate placeholder text in paragraphs, sentences or words",
+      "settingsTitle": "Generator Settings",
+      "outputTitle": "Output",
+      "paragraphs": "Paragraphs",
+      "sentences": "Sentences",
+      "words": "Words",
+      "wrapHtml": "Wrap with <p> tags",
+      "startClassic": "Start with \"Lorem ipsum dolor sit amet...\""
+    }
+  },
+  "landing": {
+    "hero": {
+      "badge": "Open Source Developer Platform",
+      "title": "Developer Tools &",
+      "titleHighlight": "Community",
+      "subtitle": "8 essential developer utilities — fast, private, and fully client-side. Plus a growing community for sharing code, solving problems, and connecting with developers worldwide.",
+      "cta": "Explore Tools",
+      "ctaSecondary": "Join Community"
+    },
+    "features": {
+      "title": "Everything you need",
+      "subtitle": "Professional developer tools that respect your privacy. All processing happens in your browser.",
+      "clientSide": "100% Client-Side",
+      "clientSideDesc": "No data ever leaves your browser. Your code stays yours.",
+      "fast": "Lightning Fast",
+      "fastDesc": "Instant results with zero server round-trips.",
+      "open": "Open & Free",
+      "openDesc": "No accounts required for tools. No ads. No tracking."
+    },
+    "toolsSection": {
+      "title": "Developer Tools",
+      "subtitle": "Essential utilities for your daily workflow"
+    }
+  },
+  "profile": {
+    "snippets": "Snippets",
+    "posts": "Posts",
+    "noSnippets": "No public snippets yet.",
+    "noPosts": "No posts yet.",
+    "follow": "Follow",
+    "unfollow": "Unfollow",
+    "notFound": "User not found",
+    "notFoundDesc": "This user doesn't exist."
+  },
+  "settings": {
+    "pageTitle": "Settings",
+    "profileSection": "Profile",
+    "username": "Username",
+    "usernameHint": "Lowercase letters, numbers, hyphens, and underscores only.",
+    "displayName": "Display Name",
+    "displayNamePlaceholder": "Your Name",
+    "bio": "Bio",
+    "bioPlaceholder": "Tell us about yourself...",
+    "saveChanges": "Save Changes",
+    "saving": "Saving...",
+    "saved": "Profile updated successfully!"
+  },
+  "messages": {
+    "pageTitle": "Messages",
+    "subtitle": "Your direct messages.",
+    "noConversations": "No messages yet.",
+    "noConversationsDesc": "Start a conversation by visiting a user's profile.",
+    "inputPlaceholder": "Type a message...",
+    "notFound": "User not found",
+    "notFoundDesc": "This user doesn't exist.",
+    "noMessages": "No messages yet. Send the first one!",
+    "browseProfiles": "Browse Forum"
+  },
+  "feed": {
+    "pageTitle": "Feed",
+    "subtitle": "See what developers you follow are sharing.",
+    "recentPosts": "Recent Posts",
+    "recentSnippets": "Recent Snippets",
+    "emptyTitle": "Your feed is empty",
+    "emptyDesc": "Follow other developers to see their posts and snippets here.",
+    "exploreForum": "Explore Forum",
+    "exploreSnippets": "Browse Snippets"
+  },
+  "forum": {
+    "pageTitle": "Forum",
+    "subtitle": "Discussions, questions, and project showcases.",
+    "newPost": "Create New Post",
+    "publishPost": "Publish Post",
+    "publishing": "Publishing...",
+    "noPosts": "No posts yet. Start a discussion!",
+    "title": "Title",
+    "titlePlaceholder": "What's on your mind?",
+    "type": "Post Type",
+    "content": "Content",
+    "contentPlaceholder": "Write your post content...",
+    "tags": "Tags (optional)",
+    "tagsPlaceholder": "react, typescript, supabase",
+    "tagsHint": "Comma-separated, max 5 tags",
+    "types": {
+      "discussion": "Discussion",
+      "question": "Question",
+      "showcase": "Showcase"
+    },
+    "all": "All",
+    "by": "by",
+    "deletePost": "Delete",
+    "deleteConfirm": "Are you sure?",
+    "markSolved": "Mark as Solved",
+    "markUnsolved": "Mark as Unsolved",
+    "solved": "Solved",
+    "comments": "Comments",
+    "noComments": "No comments yet. Be the first to reply!",
+    "addComment": "Post Comment",
+    "commentPlaceholder": "Write a comment...",
+    "loginToComment": "Sign in to leave a comment.",
+    "notFound": "Post not found",
+    "notFoundDesc": "This post may have been deleted or doesn't exist."
+  },
+  "snippets": {
+    "title": "Code Snippets",
+    "subtitle": "Browse and share code snippets with the community.",
+    "newSnippet": "Create New Snippet",
+    "createSnippet": "Create Snippet",
+    "creating": "Creating...",
+    "noSnippets": "No snippets yet. Be the first to share a code snippet!",
+    "titleField": "Title",
+    "titlePlaceholder": "My awesome snippet",
+    "language": "Language",
+    "selectLanguage": "Select a language",
+    "code": "Code",
+    "codePlaceholder": "// Write your code here...",
+    "description": "Description (optional)",
+    "descriptionPlaceholder": "Describe what this snippet does...",
+    "publicSnippet": "Public",
+    "publicNote": "Visible to everyone",
+    "by": "by",
+    "deleteSnippet": "Delete",
+    "deleteConfirm": "Are you sure you want to delete this snippet?",
+    "backToSnippets": "Back to Snippets",
+    "notFound": "Snippet not found",
+    "notFoundDesc": "This snippet may have been deleted or doesn't exist."
+  },
+  "footer": {
+    "builtWith": "Built with Next.js & TypeScript",
+    "allRightsReserved": "All rights reserved.",
+    "adminLogin": "Admin"
+  }
+}

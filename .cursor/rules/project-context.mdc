@@ -1,0 +1,80 @@
+---
+description: CommitCamp project context and memory - loaded every conversation
+globs: ["**/*"]
+alwaysApply: true
+---
+
+# CommitCamp - Project Context (AI Memory)
+
+> This file is the AI's persistent memory. It loads automatically in every conversation.
+> UPDATE THIS FILE when major changes happen.
+
+## Project Identity
+- **Name**: CommitCamp (commitcamp.com)
+- **Tagline**: "Where developers commit to growth"
+- **Owner**: Batuhan
+- **Type**: Developer Tools & Community Platform
+- **Rebranded from**: DevToolbox → CommitCamp (2026-02-12)
+
+## Tech Stack
+- **Framework**: Next.js 16 (App Router, RSC, TypeScript strict)
+- **UI**: shadcn/ui + Tailwind CSS v4 + Radix UI (glassmorphism design)
+- **Auth**: Supabase Auth (Email, GitHub, Google, Discord)
+- **Database**: Supabase PostgreSQL + RLS
+- **i18n**: next-intl (EN/TR)
+- **Theme**: next-themes (dark/light)
+- **Domain**: commitcamp.com
+
+## Database Schema (5 migrations, 8 tables)
+1. profiles - extends auth.users (username, display_name, bio, avatar_url, role)
+2. snippets - code sharing (title, language, code, is_public)
+3. posts - forum (title, content, type, tags, is_solved)
+4. comments - polymorphic threaded comments
+5. reactions - polymorphic reactions (like/fire/rocket/heart)
+6. bookmarks - polymorphic bookmarks
+7. follows - follow system
+8. messages - DM with read_at
+
+## Route Structure
+```
+/                          → Landing page
+/tools/*                   → 8 developer tools (public)
+/login, /signup, /callback → Auth pages
+/feed                      → User feed (protected)
+/snippets, /snippets/new   → Code sharing (protected)
+/forum, /forum/new         → Forum (protected)
+/messages                  → DM (protected)
+/profile/[username]        → User profiles
+/settings                  → User settings (protected)
+/admin/*                   → Admin panel (admin role)
+```
+
+## 8 Developer Tools (All migrated & working)
+1. JSON Formatter
+2. Regex Tester
+3. Base64/URL Encoder
+4. Color Converter
+5. UUID & Hash Generator
+6. JWT Decoder
+7. Timestamp Converter
+8. Lorem Ipsum Generator
+
+## Key Architecture Decisions
+- Combined middleware: next-intl locale routing + Supabase session refresh
+- All tables have RLS policies
+- Auto-sync trigger: auth.users → profiles on signup
+- Back button on all pages except landing page
+- Admin link in footer
+- MD files kept in /md folder at root
+- Supabase migrations managed by AI (never manual push)
+
+## Completed Phases
+- [x] Phase 1: Foundation + Tool Migration (all 8 tools)
+- [x] Phase 1.5: Auth + Database (Supabase, 8 tables, admin panel skeleton)
+- [x] Phase 2A: Code Sharing (snippets — full CRUD with server actions)
+- [x] Phase 2B: Forum + Comments (posts CRUD, type filter, comments)
+- [x] Phase 2C: Profiles + Follow + Feed (profile pages, settings, follow, feed)
+- [x] Phase 2D: Messaging (DM inbox, chat threads, read receipts)
+
+## For Full History
+Read `md/project-log.md` for the complete development log.
