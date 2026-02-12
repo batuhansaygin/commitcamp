@@ -24,6 +24,8 @@
 .DS_Store
 *.pem
 
+# .cursor/rules is intentionally committed for shared AI context and dev conventions
+
 # debug
 npm-debug.log*
 yarn-debug.log*

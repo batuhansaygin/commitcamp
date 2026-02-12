@@ -6,6 +6,8 @@
   <img src="https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?style=for-the-badge&logo=tailwindcss" alt="Tailwind" />
 </p>
 
+> **About this project** — CommitCamp was developed with the help of AI. It has no commercial motive and is maintained as open source purely to serve the developer community. Anyone who wants to contribute as a volunteer is welcome.
+
 # CommitCamp
 
 **Where developers commit to growth.**
@@ -246,6 +248,8 @@ export const routing = defineRouting({
 ## Contributing
 
 CommitCamp is built by the community, for the community. All contributions are welcome — whether it's fixing a bug, adding a new developer tool, translating the app, or improving the UI.
+
+**All changes to `main` must go through a Pull Request.** Direct pushes to the default branch are disabled; create a feature branch and open a PR for review.
 
 ### How to Contribute
 
