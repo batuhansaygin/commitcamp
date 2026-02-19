@@ -1,0 +1,36 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { Navbar } from '../components/Navbar';
+import HeroSection from '../components/HeroSection.astro';
+import { StatsBar } from '../components/StatsBar';
+import FeaturesSection from '../components/FeaturesSection.astro';
+import { CodePreviewSection } from '../components/CodePreviewSection';
+import { LeaderboardPreviewSection } from '../components/LeaderboardPreviewSection';
+import { CommunitySection } from '../components/CommunitySection';
+import CTASection from '../components/CTASection.astro';
+import Footer from '../components/Footer.astro';
+import { t as getT } from '../i18n/translations';
+import { config } from '../config';
+
+const lang = 'en';
+const tr = getT(lang);
+const platformUrl = config.platformUrl;
+---
+
+<BaseLayout
+  title="CommitCamp — The Social Platform Built for Developers"
+  description="Share code, showcase projects, earn XP, and connect with developers worldwide. Join CommitCamp — free forever."
+  lang={lang}
+>
+  <Navbar t={tr.nav} lang={lang} platformUrl={platformUrl} client:load />
+  <main>
+    <HeroSection t={tr.hero} lang={lang} platformUrl={platformUrl} />
+    <StatsBar t={tr.stats} client:visible />
+    <FeaturesSection t={tr.features} lang={lang} />
+    <CodePreviewSection t={tr.codePreview} client:visible />
+    <LeaderboardPreviewSection t={tr.leaderboard} client:visible />
+    <CommunitySection t={tr.community} client:visible />
+    <CTASection t={tr.cta} lang={lang} platformUrl={platformUrl} />
+  </main>
+  <Footer t={tr.footer} lang={lang} />
+</BaseLayout>
