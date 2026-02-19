@@ -2,7 +2,6 @@
 
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
-import { usePathname } from "@/i18n/navigation";
 
 const PROVIDERS = [
   {
@@ -38,15 +37,14 @@ const PROVIDERS = [
 ];
 
 export function OAuthButtons() {
-  const pathname = usePathname();
   const supabase = createClient();
 
   const handleOAuth = async (provider: "github" | "google" | "discord") => {
     await supabase.auth.signInWithOAuth({
       provider,
       options: {
-        redirectTo: `${window.location.origin}/en/callback`,
-          scopes: provider === "github" ? "read:user user:email" : undefined,
+        redirectTo: `${window.location.origin}/callback`,
+        scopes: provider === "github" ? "read:user user:email" : undefined,
       },
     });
   };
