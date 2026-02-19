@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useTranslations } from "@/lib/i18n";
 import { Link } from "@/i18n/navigation";
@@ -26,9 +26,9 @@ const RESOURCE_LINKS: FooterLink[] = [
 
 const COMPANY_LINKS: FooterLink[] = [
   { labelKey: "about", href: "#", comingSoon: true },
-  { labelKey: "privacy", href: "#" },
-  { labelKey: "terms", href: "#" },
-  { labelKey: "contact", href: "#" },
+  { labelKey: "privacy", href: "/privacy" },
+  { labelKey: "terms", href: "/terms" },
+  { labelKey: "contact", href: "mailto:support@commitcamp.com" },
 ];
 
 export function LandingFooter() {
