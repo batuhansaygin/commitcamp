@@ -1,11 +1,11 @@
-﻿"use client";
+"use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useRef } from "react";
 import { useTranslations } from "@/lib/i18n";
 import { Link } from "@/i18n/navigation";
 import { addComment } from "@/lib/actions/comments";
 import { Button } from "@/components/ui/button";
-import { User, Loader2, AlertCircle } from "lucide-react";
+import { User, Loader2, AlertCircle, CheckCircle2, MessageSquare } from "lucide-react";
 import type { CommentWithAuthor } from "@/lib/types/posts";
 
 interface CommentSectionProps {
@@ -37,10 +37,21 @@ export function CommentSection({
 }: CommentSectionProps) {
   const t = useTranslations("forum");
   const [state, action, pending] = useActionState(addComment, {});
+  const formRef = useRef<HTMLFormElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Reset the form and focus textarea after a successful comment submission
+  useEffect(() => {
+    if (state.success) {
+      formRef.current?.reset();
+      textareaRef.current?.focus();
+    }
+  }, [state.success]);
 
   return (
     <div className="space-y-4">
-      <h3 className="text-sm font-semibold">
+      <h3 className="flex items-center gap-2 text-sm font-semibold">
+        <MessageSquare className="h-4 w-4 text-muted-foreground" />
         {t("comments")} ({comments.length})
       </h3>
 
@@ -84,7 +95,7 @@ export function CommentSection({
 
       {/* Add comment form */}
       {isAuthenticated ? (
-        <form action={action} className="space-y-2">
+        <form ref={formRef} action={action} className="space-y-2">
           <input type="hidden" name="target_type" value={targetType} />
           <input type="hidden" name="target_id" value={targetId} />
 
@@ -95,7 +106,15 @@ export function CommentSection({
             </div>
           )}
 
+          {state.success && (
+            <div className="flex items-center gap-2 rounded-lg border border-green-500/30 bg-green-500/10 px-3 py-2 text-xs text-green-600 dark:text-green-400">
+              <CheckCircle2 className="h-3 w-3 shrink-0" />
+              Comment posted!
+            </div>
+          )}
+
           <textarea
+            ref={textareaRef}
             name="content"
             required
             minLength={1}
@@ -112,7 +131,12 @@ export function CommentSection({
           </Button>
         </form>
       ) : (
-        <p className="text-xs text-muted-foreground">{t("loginToComment")}</p>
+        <p className="rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+          <Link href="/login" className="font-medium text-primary hover:underline">
+            Sign in
+          </Link>{" "}
+          to leave a comment.
+        </p>
       )}
     </div>
   );

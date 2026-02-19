@@ -23,7 +23,7 @@ import type { Challenge, Contest, ContestStatus } from "@/lib/types/challenges";
 const STATUS_CONFIG: Record<ContestStatus, { label: string; color: string }> = {
   upcoming: { label: "Upcoming", color: "bg-blue-500/15 text-blue-500 border-blue-500/30" },
   active: { label: "Live", color: "bg-green-500/15 text-green-500 border-green-500/30" },
-  ended: { label: "Ended", color: "bg-zinc-500/15 text-zinc-400 border-zinc-500/30" },
+  ended: { label: "Ended", color: "bg-muted text-muted-foreground border-border/60" },
 };
 
 function formatDateTime(dateStr: string): string {
@@ -215,7 +215,7 @@ export default async function ContestDetailPage({ params }: PageProps) {
         {/* ── Challenge List ───────────────────────────────────── */}
         <div className="lg:col-span-2 space-y-4">
           <div className="flex items-center gap-2">
-            <Trophy className="w-4.5 h-4.5 text-primary" />
+            <Trophy className="w-5 h-5 text-primary" />
             <h2 className="font-semibold">
               Challenges
             </h2>
@@ -250,7 +250,7 @@ export default async function ContestDetailPage({ params }: PageProps) {
         {/* ── Leaderboard ───────────────────────────────────────── */}
         <div className="space-y-4">
           <div className="flex items-center gap-2">
-            <Medal className="w-4.5 h-4.5 text-amber-500" />
+            <Medal className="w-5 h-5 text-amber-500" />
             <h2 className="font-semibold">Leaderboard</h2>
             {leaderboard.length > 0 && (
               <Badge variant="secondary" className="text-xs">

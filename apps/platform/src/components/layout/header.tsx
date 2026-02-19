@@ -5,6 +5,7 @@ import { useTranslations } from "@/lib/i18n";
 import { Link } from "@/i18n/navigation";
 import { Sun, Moon, Monitor, Menu, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { VersionBadge } from "@/components/ui/version-badge";
 import { UserMenu } from "@/components/auth/user-menu";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { SearchTrigger } from "@/components/search/search-trigger";
@@ -74,6 +75,7 @@ export function Header({
         <span className="hidden sm:inline gradient-text text-lg">
           CommitCamp
         </span>
+        <VersionBadge className="hidden sm:inline-flex" />
       </Link>
 
       <div className="flex-1 px-2 md:px-4 max-w-xs">

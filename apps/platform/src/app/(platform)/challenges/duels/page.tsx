@@ -1,42 +1,45 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { getActiveDuels, getDuelHistory, getChallengeUserStats } from "@/lib/actions/challenges";
-import { DuelCard } from "@/components/challenges/duel-card";
+import {
+  getActiveDuels,
+  getDuelHistory,
+  getChallengeUserStats,
+  getChallenges,
+} from "@/lib/actions/challenges";
+import { DuelsHeader } from "@/components/challenges/duels-header";
+import { DuelsClient } from "@/components/challenges/duels-client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Swords, ChevronLeft, TrendingUp, Trophy, Target } from "lucide-react";
+import { Swords, ChevronLeft, Trophy, Target, BarChart3 } from "lucide-react";
 import type { Metadata } from "next";
-import type { Duel } from "@/lib/types/challenges";
 
 export const metadata: Metadata = {
   title: "Duels — CommitCamp",
   description: "Challenge other developers to 1v1 coding duels and prove your skills.",
 };
 
-interface PageProps {
-  searchParams: Promise<Record<string, string>>;
-}
-
-export default async function DuelsPage({ searchParams }: PageProps) {
+export default async function DuelsPage() {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const [activeDuels, history, stats] = await Promise.all([
+  const [activeDuels, history, stats, { challenges }] = await Promise.all([
     getActiveDuels(),
     getDuelHistory(),
     getChallengeUserStats(),
+    getChallenges({ limit: 100 }),
   ]);
 
-  // Split active duels: open (no opponent) vs targeted
+  // Open duels: pending with no opponent (anyone can join)
   const openDuels = activeDuels.filter(
     (d) => d.status === "pending" && !d.opponent_id
   );
+  // My targeted active duels
   const myActiveDuels = activeDuels.filter(
     (d) => !(d.status === "pending" && !d.opponent_id)
   );
@@ -61,58 +64,60 @@ export default async function DuelsPage({ searchParams }: PageProps) {
 
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 ring-1 ring-primary/20">
               <Swords className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold">⚔️ Duels</h1>
+              <h1 className="text-2xl font-bold tracking-tight">Duels</h1>
               <p className="text-sm text-muted-foreground">
                 1v1 coding battles — fastest correct solution wins
               </p>
             </div>
           </div>
-          <Button size="sm" asChild>
-            <Link href="/challenges?duel=1">
-              <Swords className="w-4 h-4 mr-1.5" />
-              Create Duel
-            </Link>
-          </Button>
+          {/* Client component opens the create dialog */}
+          <DuelsHeader challenges={challenges} />
         </div>
       </div>
 
       {/* ── Stats ─────────────────────────────────────────────── */}
       <div className="grid grid-cols-3 gap-3">
-        <Card>
-          <CardContent className="p-4 text-center">
-            <div className="flex justify-center mb-1.5">
+        <Card className="border-amber-500/20 bg-gradient-to-br from-amber-500/5 to-transparent">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/15 ring-1 ring-amber-500/20">
               <Trophy className="w-5 h-5 text-amber-500" />
             </div>
-            <p className="text-2xl font-bold">{stats?.duel_wins ?? 0}</p>
-            <p className="text-xs text-muted-foreground">Wins</p>
+            <div>
+              <p className="text-2xl font-bold">{stats?.duel_wins ?? 0}</p>
+              <p className="text-xs text-muted-foreground">Wins</p>
+            </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-4 text-center">
-            <div className="flex justify-center mb-1.5">
+        <Card className="border-red-500/20 bg-gradient-to-br from-red-500/5 to-transparent">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-500/15 ring-1 ring-red-500/20">
               <Target className="w-5 h-5 text-red-400" />
             </div>
-            <p className="text-2xl font-bold">{stats?.duel_losses ?? 0}</p>
-            <p className="text-xs text-muted-foreground">Losses</p>
+            <div>
+              <p className="text-2xl font-bold">{stats?.duel_losses ?? 0}</p>
+              <p className="text-xs text-muted-foreground">Losses</p>
+            </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-4 text-center">
-            <div className="flex justify-center mb-1.5">
-              <TrendingUp className="w-5 h-5 text-green-500" />
+        <Card className="border-green-500/20 bg-gradient-to-br from-green-500/5 to-transparent">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-green-500/15 ring-1 ring-green-500/20">
+              <BarChart3 className="w-5 h-5 text-green-500" />
             </div>
-            <p className="text-2xl font-bold">{winRate}%</p>
-            <p className="text-xs text-muted-foreground">Win rate</p>
+            <div>
+              <p className="text-2xl font-bold">{winRate}%</p>
+              <p className="text-xs text-muted-foreground">Win rate</p>
+            </div>
           </CardContent>
         </Card>
       </div>
 
       {/* ── Tabs ──────────────────────────────────────────────── */}
-      <Tabs defaultValue="active">
+      <Tabs defaultValue={myActiveDuels.length > 0 ? "active" : openDuels.length > 0 ? "open" : "active"}>
         <TabsList className="w-full">
           <TabsTrigger value="active" className="flex-1 gap-1.5">
             Active
@@ -135,47 +140,33 @@ export default async function DuelsPage({ searchParams }: PageProps) {
           </TabsTrigger>
         </TabsList>
 
-        {/* Active Duels */}
+        {/* Active Duels (targeted / in-progress) */}
         <TabsContent value="active" className="mt-4 space-y-3">
           {myActiveDuels.length > 0 ? (
-            myActiveDuels.map((duel) => (
-              <DuelCard
-                key={duel.id}
-                duel={duel}
-                currentUserId={user.id}
-              />
-            ))
+            <DuelsClient duels={myActiveDuels} currentUserId={user.id} />
           ) : (
             <EmptyDuels
               title="No active duels"
-              description="Challenge someone to a duel or accept an open challenge!"
-              cta="Find a challenge"
-              href="/challenges?duel=1"
+              description="Create a duel or accept an open challenge to get started!"
+              icon="active"
             />
           )}
         </TabsContent>
 
-        {/* Open Duels (anyone can join) */}
+        {/* Open Duels (anyone can accept) */}
         <TabsContent value="open" className="mt-4 space-y-3">
           {openDuels.length > 0 ? (
             <>
-              <p className="text-xs text-muted-foreground">
-                These are open challenges — anyone can accept them!
+              <p className="text-xs text-muted-foreground px-0.5">
+                Open challenges — anyone can accept and compete!
               </p>
-              {openDuels.map((duel) => (
-                <DuelCard
-                  key={duel.id}
-                  duel={duel}
-                  currentUserId={user.id}
-                />
-              ))}
+              <DuelsClient duels={openDuels} currentUserId={user.id} />
             </>
           ) : (
             <EmptyDuels
               title="No open duels"
               description="No open challenges at the moment. Create one and see who accepts!"
-              cta="Create a duel"
-              href="/challenges?duel=1"
+              icon="open"
             />
           )}
         </TabsContent>
@@ -183,19 +174,12 @@ export default async function DuelsPage({ searchParams }: PageProps) {
         {/* History */}
         <TabsContent value="history" className="mt-4 space-y-3">
           {history.length > 0 ? (
-            history.map((duel) => (
-              <DuelCard
-                key={duel.id}
-                duel={duel}
-                currentUserId={user.id}
-              />
-            ))
+            <DuelsClient duels={history} currentUserId={user.id} />
           ) : (
             <EmptyDuels
               title="No duel history"
-              description="You haven't completed any duels yet. Challenge someone to get started!"
-              cta="Challenge someone"
-              href="/challenges?duel=1"
+              description="You haven't completed any duels yet. Challenge someone now!"
+              icon="history"
             />
           )}
         </TabsContent>
@@ -207,23 +191,21 @@ export default async function DuelsPage({ searchParams }: PageProps) {
 function EmptyDuels({
   title,
   description,
-  cta,
-  href,
+  icon,
 }: {
   title: string;
   description: string;
-  cta: string;
-  href: string;
+  icon: "active" | "open" | "history";
 }) {
+  const emojis = { active: "⚔️", open: "🏆", history: "📜" };
   return (
-    <Card>
-      <CardContent className="p-10 text-center">
-        <p className="text-3xl mb-3">⚔️</p>
+    <Card className="border-dashed">
+      <CardContent className="p-12 text-center">
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-muted">
+          <Swords className="w-6 h-6 text-muted-foreground/50" />
+        </div>
         <p className="font-semibold">{title}</p>
-        <p className="text-sm text-muted-foreground mt-1 mb-4">{description}</p>
-        <Button size="sm" asChild>
-          <Link href={href}>{cta}</Link>
-        </Button>
+        <p className="text-sm text-muted-foreground mt-1.5">{description}</p>
       </CardContent>
     </Card>
   );

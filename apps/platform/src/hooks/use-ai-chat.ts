@@ -78,13 +78,16 @@ export function useAIChat() {
           signal: abortController.signal,
         });
 
-        if (response.status === 429) {
-          const data = (await response.json()) as { error: string };
-          throw new Error(data.error ?? "Rate limit exceeded.");
-        }
-
         if (!response.ok) {
-          throw new Error(`AI request failed: ${response.statusText}`);
+          try {
+            const data = (await response.json()) as { error?: string };
+            throw new Error(data.error ?? `Request failed (${response.status})`);
+          } catch (parseErr) {
+            if (parseErr instanceof SyntaxError) {
+              throw new Error(`Request failed (${response.status}): ${response.statusText}`);
+            }
+            throw parseErr;
+          }
         }
 
         const reader = response.body?.getReader();

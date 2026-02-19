@@ -12,6 +12,7 @@ import { checkAndAwardAchievements, updateStreak } from "@/lib/actions/achieveme
 
 interface ActionResult {
   error?: string;
+  success?: boolean;
 }
 
 async function getAuthenticatedUser() {
@@ -120,5 +121,5 @@ export async function addComment(
     revalidatePath(`/snippets/${targetId}`);
   }
 
-  return {};
+  return { success: true };
 }

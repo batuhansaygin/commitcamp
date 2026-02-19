@@ -9,28 +9,35 @@ type SimpleMessage = {
   content: string;
 };
 
-/** Wrap a text stream so any error is forwarded as a final error chunk. */
-function textStreamWithErrorFallback(
-  textStream: AsyncIterable<string>
-): ReadableStream<string> {
-  return new ReadableStream<string>({
-    async start(controller) {
-      try {
-        for await (const chunk of textStream) {
-          controller.enqueue(chunk);
-        }
-        controller.close();
-      } catch (err) {
-        const msg =
-          err instanceof Error ? err.message : "Unknown error from AI model.";
-        console.error("[AI stream error]", msg);
-        controller.enqueue(
-          `\n\n⚠️ The AI model returned an error: ${msg}. Please try again or switch models.`
-        );
-        controller.close();
-      }
+/** Error response helper */
+function errorResponse(message: string, status: number) {
+  return new Response(JSON.stringify({ error: message }), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+async function tryStream(
+  key: AIModelKey,
+  messages: SimpleMessage[]
+): Promise<Response> {
+  const model = getModel(key);
+
+  const result = streamText({
+    model,
+    system: SYSTEM_PROMPT,
+    messages,
+    maxOutputTokens: AI_MODELS[key].maxTokens,
+    temperature: 0.7,
+    // Log stream-level errors server-side only
+    onError: ({ error }) => {
+      console.error(`[AI stream error — ${key}]`, error);
     },
   });
+
+  // toTextStreamResponse() correctly pipes through TextEncoderStream
+  // so the client receives valid Uint8Array chunks (not raw strings)
+  return result.toTextStreamResponse();
 }
 
 export async function POST(req: Request) {
@@ -39,56 +46,47 @@ export async function POST(req: Request) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) {
-    return new Response("Unauthorized", { status: 401 });
-  }
+  if (!user) return errorResponse("Unauthorized", 401);
 
   // Rate limit
   const rateCheck = checkRateLimit(user.id);
   if (!rateCheck.allowed) {
-    return new Response(JSON.stringify({ error: rateCheck.reason }), {
-      status: 429,
-      headers: { "Content-Type": "application/json" },
-    });
+    return errorResponse(rateCheck.reason ?? "Rate limit exceeded.", 429);
   }
 
   // Parse body
-  const { messages, modelKey = "gemini" } = (await req.json()) as {
-    messages: SimpleMessage[];
-    modelKey?: AIModelKey;
-  };
-
-  const safeModelKey: AIModelKey =
-    modelKey in AI_MODELS ? modelKey : "gemini";
-
-  async function tryStream(key: AIModelKey): Promise<Response> {
-    const model = getModel(key);
-    const result = streamText({
-      model,
-      system: SYSTEM_PROMPT,
-      messages,
-      maxOutputTokens: AI_MODELS[key].maxTokens,
-      temperature: 0.7,
-    });
-
-    const safeStream = textStreamWithErrorFallback(result.textStream);
-    return new Response(safeStream as unknown as BodyInit, {
-      status: 200,
-      headers: { "Content-Type": "text/plain; charset=utf-8" },
-    });
-  }
+  let messages: SimpleMessage[];
+  let modelKey: AIModelKey;
 
   try {
-    return await tryStream(safeModelKey);
+    const body = (await req.json()) as {
+      messages: SimpleMessage[];
+      modelKey?: AIModelKey;
+    };
+    messages = body.messages ?? [];
+    modelKey = body.modelKey && body.modelKey in AI_MODELS ? body.modelKey : "gemini";
   } catch {
-    const fallback: AIModelKey = safeModelKey === "gemini" ? "groq" : "gemini";
+    return errorResponse("Invalid request body.", 400);
+  }
+
+  if (!messages.length) {
+    return errorResponse("No messages provided.", 400);
+  }
+
+  // Try primary model, fall back to secondary
+  try {
+    return await tryStream(modelKey, messages);
+  } catch (primaryErr) {
+    console.error(`[AI init error — ${modelKey}]`, primaryErr);
+
+    const fallback: AIModelKey = modelKey === "gemini" ? "groq" : "gemini";
     try {
-      return await tryStream(fallback);
-    } catch (err) {
-      console.error("Both AI models failed at init:", err);
-      return new Response(
-        JSON.stringify({ error: "AI service temporarily unavailable." }),
-        { status: 503, headers: { "Content-Type": "application/json" } }
+      return await tryStream(fallback, messages);
+    } catch (fallbackErr) {
+      console.error(`[AI init error — ${fallback}]`, fallbackErr);
+      return errorResponse(
+        "Both AI models are currently unavailable. Please try again later.",
+        503
       );
     }
   }

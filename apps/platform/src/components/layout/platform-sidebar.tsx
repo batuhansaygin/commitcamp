@@ -25,6 +25,7 @@ import {
   Sparkles,
   Swords,
 } from "lucide-react";
+import { VersionBadge } from "@/components/ui/version-badge";
 
 interface PlatformSidebarProps {
   open: boolean;
@@ -123,7 +124,10 @@ export function PlatformSidebar({ open, onClose }: PlatformSidebarProps) {
       >
         {/* Mobile header */}
         <div className="flex items-center justify-between border-b border-border p-4 md:hidden">
-          <span className="font-bold gradient-text">CommitCamp</span>
+          <div className="flex items-center gap-2">
+            <span className="font-bold gradient-text">CommitCamp</span>
+            <VersionBadge />
+          </div>
           <Button variant="ghost" size="icon" onClick={onClose}>
             <X className="h-5 w-5" />
           </Button>

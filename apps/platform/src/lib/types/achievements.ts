@@ -83,12 +83,12 @@ export const RARITY_CONFIG: Record<
 > = {
   common: {
     label: "Common",
-    color: "#9ca3af",
-    textClass: "text-gray-500 dark:text-gray-400",
-    bgClass: "bg-gray-50 dark:bg-gray-900/40",
-    borderClass: "border-gray-200 dark:border-gray-700",
-    badgeClass: "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300",
-    glowClass: "shadow-gray-300/40 dark:shadow-gray-800/40",
+    color: "#8b7db5",
+    textClass: "text-muted-foreground",
+    bgClass: "bg-muted/60",
+    borderClass: "border-border",
+    badgeClass: "bg-muted text-muted-foreground border-border",
+    glowClass: "shadow-none",
   },
   uncommon: {
     label: "Uncommon",

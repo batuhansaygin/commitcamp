@@ -9,6 +9,14 @@ interface AchievementCardProps {
   className?: string;
 }
 
+const PROGRESS_COLOR: Record<string, string> = {
+  common:    "bg-muted-foreground/50",
+  uncommon:  "bg-green-500",
+  rare:      "bg-blue-500",
+  epic:      "bg-purple-500",
+  legendary: "bg-amber-500",
+};
+
 export function AchievementCard({ progress: p, className }: AchievementCardProps) {
   const config = RARITY_CONFIG[p.rarity];
 
@@ -23,7 +31,7 @@ export function AchievementCard({ progress: p, className }: AchievementCardProps
               "hover:-translate-y-0.5 hover:shadow-md",
               config.glowClass
             )
-          : "border-border/50 bg-muted/20 opacity-80 hover:opacity-100",
+          : "border-border/60 bg-muted/30 hover:bg-muted/50 hover:border-border",
         className
       )}
     >
@@ -35,10 +43,12 @@ export function AchievementCard({ progress: p, className }: AchievementCardProps
             "flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border text-2xl",
             p.is_unlocked
               ? cn(config.bgClass, config.borderClass)
-              : "border-border/60 bg-muted/50 grayscale"
+              : "border-border/50 bg-muted/60"
           )}
         >
-          {p.icon}
+          <span className={cn(!p.is_unlocked && "saturate-0 opacity-60")}>
+            {p.icon}
+          </span>
         </div>
 
         {/* Badges */}
@@ -47,7 +57,7 @@ export function AchievementCard({ progress: p, className }: AchievementCardProps
           {p.xp_reward > 0 && (
             <span
               className={cn(
-                "text-[9px] font-bold",
+                "text-[10px] font-bold",
                 p.is_unlocked ? config.textClass : "text-muted-foreground"
               )}
             >
@@ -69,11 +79,9 @@ export function AchievementCard({ progress: p, className }: AchievementCardProps
             {p.name}
           </h3>
           {p.is_unlocked ? (
-            <CheckCircle2
-              className={cn("h-3.5 w-3.5 shrink-0", config.textClass)}
-            />
+            <CheckCircle2 className={cn("h-3.5 w-3.5 shrink-0", config.textClass)} />
           ) : (
-            <Lock className="h-3 w-3 shrink-0 text-muted-foreground/60" />
+            <Lock className="h-3 w-3 shrink-0 text-muted-foreground/50" />
           )}
         </div>
         <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
@@ -90,15 +98,11 @@ export function AchievementCard({ progress: p, className }: AchievementCardProps
             </span>
             <span>{p.progress_percent}%</span>
           </div>
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-border/60">
             <div
               className={cn(
                 "h-full rounded-full transition-all duration-500",
-                p.rarity === "common"    && "bg-gray-400",
-                p.rarity === "uncommon"  && "bg-green-500",
-                p.rarity === "rare"      && "bg-blue-500",
-                p.rarity === "epic"      && "bg-purple-500",
-                p.rarity === "legendary" && "bg-amber-500"
+                PROGRESS_COLOR[p.rarity] ?? "bg-primary/60"
               )}
               style={{ width: `${p.progress_percent}%` }}
             />

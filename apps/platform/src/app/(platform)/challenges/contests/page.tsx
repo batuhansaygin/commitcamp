@@ -45,7 +45,7 @@ export default async function ContestsPage() {
             <Trophy className="h-5 w-5 text-amber-500" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold">🏆 Contests</h1>
+            <h1 className="text-2xl font-bold tracking-tight">Contests</h1>
             <p className="text-sm text-muted-foreground">
               Compete in timed events, earn XP prizes, and make the leaderboard.
             </p>
@@ -57,7 +57,7 @@ export default async function ContestsPage() {
       {active.length > 0 && (
         <section className="space-y-3">
           <div className="flex items-center gap-2">
-            <Trophy className="w-4.5 h-4.5 text-green-500" />
+            <Trophy className="w-5 h-5 text-green-500" />
             <h2 className="font-semibold">Active Contests</h2>
             <Badge className="bg-green-500/15 text-green-500 border-green-500/30 text-xs animate-pulse">
               Live
@@ -75,7 +75,7 @@ export default async function ContestsPage() {
       {upcoming.length > 0 && (
         <section className="space-y-3">
           <div className="flex items-center gap-2">
-            <Calendar className="w-4.5 h-4.5 text-blue-500" />
+            <Calendar className="w-5 h-5 text-blue-500" />
             <h2 className="font-semibold">Upcoming Contests</h2>
             <Badge variant="secondary" className="text-xs">
               {upcoming.length}
@@ -93,7 +93,7 @@ export default async function ContestsPage() {
       {ended.length > 0 && (
         <section className="space-y-3">
           <div className="flex items-center gap-2">
-            <Clock className="w-4.5 h-4.5 text-muted-foreground" />
+            <Clock className="w-5 h-5 text-muted-foreground" />
             <h2 className="font-semibold">Past Contests</h2>
           </div>
           <div className="grid gap-3 md:grid-cols-2">

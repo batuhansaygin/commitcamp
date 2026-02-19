@@ -1,11 +1,8 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Medal, Zap, Clock } from "lucide-react";
+import { Clock, Zap, Trophy } from "lucide-react";
 import type { ChallengeLeaderboardEntry } from "@/lib/types/challenges";
-import {
-  LANGUAGE_LABELS,
-  type SupportedLanguage,
-} from "@/lib/types/challenges";
+import { LANGUAGE_LABELS, type SupportedLanguage } from "@/lib/types/challenges";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -15,32 +12,29 @@ interface Props {
 
 function formatTime(ms: number): string {
   if (ms < 1000) return "< 1s";
-  const seconds = Math.floor(ms / 1000);
-  if (seconds < 60) return `${seconds}s`;
-  const minutes = Math.floor(seconds / 60);
-  const remainingSeconds = seconds % 60;
-  return remainingSeconds > 0
-    ? `${minutes}m ${remainingSeconds}s`
-    : `${minutes}m`;
+  const s = Math.floor(ms / 1000);
+  if (s < 60) return `${s}s`;
+  const m = Math.floor(s / 60);
+  return s % 60 > 0 ? `${m}m ${s % 60}s` : `${m}m`;
 }
 
-const MEDAL_CONFIG: Record<
-  number,
-  { icon: string; color: string; bgClass: string }
-> = {
-  1: { icon: "🥇", color: "text-yellow-500", bgClass: "bg-yellow-500/10" },
-  2: { icon: "🥈", color: "text-slate-400", bgClass: "bg-slate-400/10" },
-  3: { icon: "🥉", color: "text-amber-600", bgClass: "bg-amber-600/10" },
+const RANK_STYLES: Record<number, { bg: string; border: string; text: string; emoji: string }> = {
+  1: { bg: "bg-yellow-500/12", border: "border-yellow-500/30", text: "text-yellow-500", emoji: "🥇" },
+  2: { bg: "bg-slate-400/10",  border: "border-slate-400/25",  text: "text-slate-400",  emoji: "🥈" },
+  3: { bg: "bg-amber-600/10",  border: "border-amber-600/25",  text: "text-amber-600",  emoji: "🥉" },
 };
 
 export function ChallengeLeaderboard({ entries, currentUserId }: Props) {
   if (entries.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-center gap-2">
-        <Zap className="w-8 h-8 text-muted-foreground/40" />
-        <p className="text-sm text-muted-foreground font-medium">
-          No solutions yet — be the first!
-        </p>
+      <div className="flex flex-col items-center justify-center py-14 text-center gap-3">
+        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted">
+          <Trophy className="w-7 h-7 text-muted-foreground/40" />
+        </div>
+        <div>
+          <p className="text-sm font-medium">No solutions yet</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Be the first to solve this challenge!</p>
+        </div>
       </div>
     );
   }
@@ -49,10 +43,8 @@ export function ChallengeLeaderboard({ entries, currentUserId }: Props) {
     <div className="divide-y divide-border/50">
       {entries.map((entry) => {
         const isCurrentUser = entry.user_id === currentUserId;
-        const medal = MEDAL_CONFIG[entry.rank];
-        const langLabel =
-          LANGUAGE_LABELS[entry.best_language as SupportedLanguage] ??
-          entry.best_language;
+        const rankStyle = RANK_STYLES[entry.rank];
+        const langLabel = LANGUAGE_LABELS[entry.best_language as SupportedLanguage] ?? entry.best_language;
 
         return (
           <div
@@ -60,70 +52,72 @@ export function ChallengeLeaderboard({ entries, currentUserId }: Props) {
             className={cn(
               "flex items-center gap-3 px-4 py-3 transition-colors",
               isCurrentUser
-                ? "bg-primary/5 border-l-2 border-l-primary"
-                : "hover:bg-muted/50"
+                ? "bg-primary/6 border-l-[3px] border-l-primary"
+                : "hover:bg-muted/40"
             )}
           >
-            {/* Rank */}
+            {/* Rank indicator */}
             <div className="w-8 flex items-center justify-center shrink-0">
-              {medal ? (
+              {rankStyle ? (
                 <span
                   className={cn(
-                    "flex items-center justify-center w-7 h-7 rounded-full text-sm",
-                    medal.bgClass
+                    "flex items-center justify-center w-7 h-7 rounded-full border text-sm",
+                    rankStyle.bg,
+                    rankStyle.border
                   )}
-                  title={`Rank #${entry.rank}`}
                 >
-                  {medal.icon}
+                  {rankStyle.emoji}
                 </span>
               ) : (
-                <span className="text-sm font-semibold text-muted-foreground w-7 text-center">
+                <span className="text-sm font-bold text-muted-foreground tabular-nums w-7 text-center">
                   {entry.rank}
                 </span>
               )}
             </div>
 
-            {/* Avatar + user info */}
-            <Avatar className="w-8 h-8 shrink-0">
-              {entry.avatar_url && (
-                <AvatarImage src={entry.avatar_url} alt={entry.display_name} />
-              )}
-              <AvatarFallback className="text-xs">
+            {/* Avatar */}
+            <Avatar className="w-8 h-8 shrink-0 ring-1 ring-border">
+              {entry.avatar_url && <AvatarImage src={entry.avatar_url} alt={entry.display_name} />}
+              <AvatarFallback className="text-xs bg-muted font-semibold">
                 {entry.display_name.slice(0, 2).toUpperCase()}
               </AvatarFallback>
             </Avatar>
 
+            {/* User info */}
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium truncate">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className={cn("text-sm font-semibold truncate", isCurrentUser && "text-primary")}>
                   {entry.display_name}
                 </span>
                 <Badge
-                  variant="outline"
-                  className="text-[10px] px-1.5 py-0 h-4 shrink-0"
+                  variant="secondary"
+                  className="text-[10px] px-1.5 py-0 h-4 shrink-0 font-medium"
                 >
                   Lv.{entry.level}
                 </Badge>
                 {entry.rank === 1 && (
-                  <Badge className="text-[10px] px-1.5 py-0 h-4 bg-red-500/15 text-red-500 border-red-500/30 border shrink-0">
+                  <Badge className="text-[10px] px-1.5 py-0 h-4 bg-red-500/12 text-red-500 border border-red-500/30 shrink-0">
                     First Blood 🩸
                   </Badge>
                 )}
+                {isCurrentUser && (
+                  <Badge className="text-[10px] px-1.5 py-0 h-4 bg-primary/12 text-primary border border-primary/25 shrink-0">
+                    You
+                  </Badge>
+                )}
               </div>
-              <span className="text-xs text-muted-foreground">
-                @{entry.username}
-              </span>
+              <span className="text-xs text-muted-foreground">@{entry.username}</span>
             </div>
 
-            {/* Time + language */}
+            {/* Stats */}
             <div className="flex items-center gap-2 shrink-0">
               {entry.best_time_ms !== null && (
                 <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <Clock className="w-3.5 h-3.5" />
+                  <Clock className="w-3 h-3" />
                   {formatTime(entry.best_time_ms)}
                 </span>
               )}
-              <span className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-mono font-medium bg-muted text-muted-foreground border border-border/50">
+              <span className="inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-mono font-medium bg-muted text-muted-foreground border border-border/60">
                 {langLabel}
               </span>
             </div>

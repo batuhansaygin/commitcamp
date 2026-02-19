@@ -1,4 +1,3 @@
-import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
@@ -23,8 +22,9 @@ import {
   Shuffle,
   Target,
   Zap,
-  BarChart3,
   TrendingUp,
+  Search,
+  SlidersHorizontal,
 } from "lucide-react";
 import type { Metadata } from "next";
 import type { ChallengeDifficulty, ChallengeCategory } from "@/lib/types/challenges";
@@ -39,19 +39,12 @@ interface PageProps {
   searchParams: Promise<Record<string, string>>;
 }
 
-const DIFFICULTIES: { value: ChallengeDifficulty | "all"; label: string }[] = [
-  { value: "all", label: "All" },
-  { value: "easy", label: "Easy" },
-  { value: "medium", label: "Medium" },
-  { value: "hard", label: "Hard" },
-  { value: "expert", label: "Expert" },
-];
-
-const SORT_OPTIONS = [
-  { value: "newest", label: "Newest" },
-  { value: "most_solved", label: "Most Solved" },
-  { value: "hardest", label: "Hardest First" },
-  { value: "easiest", label: "Easiest First" },
+const DIFFICULTIES: { value: ChallengeDifficulty | "all"; label: string; color: string }[] = [
+  { value: "all", label: "All", color: "" },
+  { value: "easy", label: "Easy", color: "text-green-500" },
+  { value: "medium", label: "Medium", color: "text-amber-500" },
+  { value: "hard", label: "Hard", color: "text-red-500" },
+  { value: "expert", label: "Expert", color: "text-purple-500" },
 ];
 
 const PAGE_SIZE = 12;
@@ -72,7 +65,6 @@ export default async function ChallengesPage({ searchParams }: PageProps) {
   const search = params.search || undefined;
   const page = Math.max(1, parseInt(params.page || "1", 10));
 
-  // Parallel data fetch
   const [{ challenges, total }, daily, stats, allContests] = await Promise.all([
     getChallenges({ difficulty, category, search, page, limit: PAGE_SIZE }),
     getDailyChallenge(),
@@ -82,127 +74,140 @@ export default async function ChallengesPage({ searchParams }: PageProps) {
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
-  // Build pagination URLs
   function buildUrl(overrides: Record<string, string | undefined>) {
     const next = new URLSearchParams();
-    const merged = { difficulty: params.difficulty, category: params.category, search: params.search, page: params.page, ...overrides };
+    const merged = {
+      difficulty: params.difficulty,
+      category: params.category,
+      search: params.search,
+      page: params.page,
+      ...overrides,
+    };
     for (const [k, v] of Object.entries(merged)) {
       if (v && v !== "all") next.set(k, v);
     }
     return `/challenges?${next.toString()}`;
   }
 
+  const activeDiff = params.difficulty || "all";
+  const hasFilters = !!(search || difficulty || category);
+
   return (
-    <div className="mx-auto max-w-6xl space-y-8 pb-12">
-      {/* ── Header ───────────────────────────────────────────── */}
+    <div className="mx-auto max-w-6xl space-y-8 pb-16">
+      {/* ── Page Header ─────────────────────────────────────────── */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div className="space-y-1">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
-              <Swords className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold">⚔️ Coding Challenges</h1>
-              <p className="text-sm text-muted-foreground">
-                Sharpen your skills. Earn XP. Climb the ranks.
-              </p>
-            </div>
+        <div className="flex items-center gap-4">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 ring-1 ring-primary/20">
+            <Swords className="h-6 w-6 text-primary" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Coding Challenges</h1>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              Sharpen your skills. Earn XP. Climb the ranks.
+            </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" asChild>
+
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button variant="outline" size="sm" asChild className="gap-1.5">
             <Link href="/challenges/duels">
-              <Swords className="w-4 h-4 mr-1.5" />
+              <Swords className="w-4 h-4" />
               Duels
             </Link>
           </Button>
-          <Button variant="outline" size="sm" asChild>
+          <Button variant="outline" size="sm" asChild className="gap-1.5">
             <Link href="/challenges/contests">
-              <Trophy className="w-4 h-4 mr-1.5" />
+              <Trophy className="w-4 h-4" />
               Contests
             </Link>
           </Button>
-          <Button size="sm" asChild>
+          <Button size="sm" asChild className="gap-1.5">
             <Link href="/challenges/create">
-              <Plus className="w-4 h-4 mr-1.5" />
+              <Plus className="w-4 h-4" />
               Create Challenge
             </Link>
           </Button>
         </div>
       </div>
 
-      {/* ── Stats row ─────────────────────────────────────────── */}
+      {/* ── Stats Cards ─────────────────────────────────────────── */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Card>
+        {/* Solved */}
+        <Card className="border-green-500/20 bg-gradient-to-br from-green-500/5 to-transparent">
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-green-500/10">
-              <Target className="w-4.5 h-4.5 text-green-500" />
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-green-500/15 ring-1 ring-green-500/20">
+              <Target className="w-5 h-5 text-green-500" />
             </div>
             <div>
-              <p className="text-xl font-bold">{stats?.total_solved ?? 0}</p>
+              <p className="text-2xl font-bold">{stats?.total_solved ?? 0}</p>
               <p className="text-xs text-muted-foreground">Solved</p>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        {/* Streak */}
+        <Card className="border-orange-500/20 bg-gradient-to-br from-orange-500/5 to-transparent">
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-orange-500/10">
-              <Flame className="w-4.5 h-4.5 text-orange-500" />
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-500/15 ring-1 ring-orange-500/20">
+              <Flame className="w-5 h-5 text-orange-500" />
             </div>
             <div>
-              <p className="text-xl font-bold">
-                🔥 {stats?.current_streak ?? 0}
-              </p>
+              <p className="text-2xl font-bold">{stats?.current_streak ?? 0}</p>
               <p className="text-xs text-muted-foreground">Day streak</p>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        {/* Rank */}
+        <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-              <BarChart3 className="w-4.5 h-4.5 text-primary" />
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 ring-1 ring-primary/20">
+              <Zap className="w-5 h-5 text-primary" />
             </div>
             <div className="min-w-0">
-              <div className="mt-0.5">
-                <ChallengeRankBadge
-                  rank={stats?.challenge_rank ?? "unranked"}
-                  totalSolved={stats?.total_solved ?? 0}
-                />
-              </div>
+              <ChallengeRankBadge
+                rank={stats?.challenge_rank ?? "unranked"}
+                totalSolved={stats?.total_solved ?? 0}
+              />
               <p className="text-xs text-muted-foreground mt-0.5">Rank</p>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        {/* Duels */}
+        <Card className="border-blue-500/20 bg-gradient-to-br from-blue-500/5 to-transparent">
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-500/10">
-              <Swords className="w-4.5 h-4.5 text-blue-500" />
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-500/15 ring-1 ring-blue-500/20">
+              <Swords className="w-5 h-5 text-blue-500" />
             </div>
             <div>
-              <p className="text-xl font-bold">
-                {stats?.duel_wins ?? 0}W / {stats?.duel_losses ?? 0}L
+              <p className="text-2xl font-bold">
+                <span className="text-green-500">{stats?.duel_wins ?? 0}</span>
+                <span className="text-muted-foreground/60 text-base font-normal mx-1">/</span>
+                <span className="text-red-500">{stats?.duel_losses ?? 0}</span>
               </p>
-              <p className="text-xs text-muted-foreground">Duels</p>
+              <p className="text-xs text-muted-foreground">W / L Duels</p>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* ── Daily Challenge ────────────────────────────────────── */}
+      {/* ── Daily Challenge ──────────────────────────────────────── */}
       <section className="space-y-3">
         <div className="flex items-center gap-2">
-          <Flame className="w-4.5 h-4.5 text-orange-500" />
+          <Flame className="w-5 h-5 text-orange-500" />
           <h2 className="text-base font-semibold">Today&apos;s Challenge</h2>
         </div>
         {daily ? (
-          <DailyChallengeCard challenge={daily} userSolved={daily.user_solved} />
+          <DailyChallengeCard
+            challenge={daily}
+            userSolved={daily.user_solved}
+            streak={stats?.current_streak}
+          />
         ) : (
-          <Card>
+          <Card className="border-dashed">
             <CardContent className="p-8 text-center">
-              <p className="text-2xl mb-2">🌅</p>
+              <p className="text-3xl mb-2">🌅</p>
               <p className="font-medium">No daily challenge today</p>
               <p className="text-sm text-muted-foreground mt-1">
                 Check back tomorrow for a fresh challenge!
@@ -212,20 +217,22 @@ export default async function ChallengesPage({ searchParams }: PageProps) {
         )}
       </section>
 
-      {/* ── Active Contests ────────────────────────────────────── */}
+      {/* ── Active Contests ──────────────────────────────────────── */}
       {allContests.length > 0 && (
         <section className="space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Trophy className="w-4.5 h-4.5 text-amber-500" />
-              <h2 className="text-base font-semibold">🏆 Active Contests</h2>
-              <Badge className="bg-green-500/15 text-green-500 border-green-500/30 text-xs">
+              <Trophy className="w-5 h-5 text-amber-500" />
+              <h2 className="text-base font-semibold">Active Contests</h2>
+              <Badge className="bg-green-500/12 text-green-500 border-green-500/30 text-xs gap-1 animate-pulse">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block" />
                 Live
               </Badge>
             </div>
-            <Button variant="ghost" size="sm" asChild>
+            <Button variant="ghost" size="sm" asChild className="gap-1 text-muted-foreground hover:text-foreground">
               <Link href="/challenges/contests">
-                View all <TrendingUp className="w-3.5 h-3.5 ml-1" />
+                View all
+                <TrendingUp className="w-3.5 h-3.5 ml-1" />
               </Link>
             </Button>
           </div>
@@ -237,97 +244,114 @@ export default async function ChallengesPage({ searchParams }: PageProps) {
         </section>
       )}
 
-      {/* ── Challenge List ─────────────────────────────────────── */}
-      <section className="space-y-4">
-        <div className="flex items-center justify-between flex-wrap gap-3">
-          <div className="flex items-center gap-2">
-            <Zap className="w-4.5 h-4.5 text-primary" />
+      {/* ── All Challenges ───────────────────────────────────────── */}
+      <section className="space-y-5">
+        {/* Section header */}
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-2.5">
+            <Zap className="w-5 h-5 text-primary" />
             <h2 className="text-base font-semibold">All Challenges</h2>
             {total > 0 && (
-              <Badge variant="secondary" className="text-xs">
-                {total.toLocaleString()} {total === 1 ? "challenge" : "challenges"}
+              <Badge variant="secondary" className="text-xs tabular-nums">
+                {total.toLocaleString()}
               </Badge>
             )}
           </div>
-          {/* Random challenge */}
           {challenges.length > 0 && (
-            <Button variant="outline" size="sm" asChild>
+            <Button variant="outline" size="sm" asChild className="gap-1.5">
               <Link
                 href={`/challenges/${
                   challenges[Math.floor(Math.random() * challenges.length)]?.slug ?? ""
                 }`}
               >
-                <Shuffle className="w-3.5 h-3.5 mr-1.5" />
+                <Shuffle className="w-3.5 h-3.5" />
                 Random
               </Link>
             </Button>
           )}
         </div>
 
-        {/* Filters */}
-        <div className="space-y-3">
-          {/* Difficulty tabs */}
+        {/* ── Filters ─────────────────────────────────────────────── */}
+        <div className="rounded-xl border border-border/70 bg-muted/30 p-4 space-y-3">
+          {/* Difficulty pills */}
           <div className="flex items-center gap-1.5 flex-wrap">
-            {DIFFICULTIES.map(({ value, label }) => {
+            {DIFFICULTIES.map(({ value, label, color }) => {
               const isActive =
-                value === "all"
-                  ? !params.difficulty || params.difficulty === "all"
-                  : params.difficulty === value;
+                value === "all" ? !params.difficulty || params.difficulty === "all" : activeDiff === value;
               return (
                 <Link key={value} href={buildUrl({ difficulty: value, page: "1" })}>
-                  <Badge
-                    variant={isActive ? "default" : "outline"}
-                    className="cursor-pointer hover:bg-primary/80 transition-colors"
+                  <button
+                    className={[
+                      "inline-flex items-center rounded-lg px-3 py-1.5 text-xs font-medium transition-all duration-150",
+                      isActive
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : `bg-background border border-border hover:border-primary/40 hover:bg-primary/5 ${color || "text-muted-foreground hover:text-foreground"}`,
+                    ].join(" ")}
                   >
                     {label}
-                  </Badge>
+                  </button>
                 </Link>
               );
             })}
           </div>
 
-          {/* Category + Sort + Search row */}
-          <div className="flex items-center gap-2 flex-wrap">
-            {/* Category select — native HTML for server component */}
-            <form method="get" action="/challenges" className="contents">
-              {difficulty && (
-                <input type="hidden" name="difficulty" value={difficulty} />
-              )}
-              {search && <input type="hidden" name="search" value={search} />}
+          {/* Category + search row */}
+          <form method="get" action="/challenges" className="flex items-center gap-2 flex-wrap">
+            {difficulty && <input type="hidden" name="difficulty" value={difficulty} />}
+            {search && <input type="hidden" name="search" value={search} />}
+
+            <div className="relative">
+              <SlidersHorizontal className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
               <select
                 name="category"
                 defaultValue={category ?? ""}
-                className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                onChangeCapture={undefined}
+                className="h-9 appearance-none rounded-lg border border-border bg-background pl-8 pr-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 cursor-pointer"
               >
                 <option value="">All Categories</option>
-                {(Object.entries(CATEGORY_CONFIG) as [ChallengeCategory, { label: string; icon: string }][]).map(
-                  ([val, { label, icon }]) => (
-                    <option key={val} value={val}>
-                      {icon} {label}
-                    </option>
-                  )
-                )}
+                {(
+                  Object.entries(CATEGORY_CONFIG) as [
+                    ChallengeCategory,
+                    { label: string; icon: string }
+                  ][]
+                ).map(([val, { label, icon }]) => (
+                  <option key={val} value={val}>
+                    {icon} {label}
+                  </option>
+                ))}
               </select>
+            </div>
 
+            <div className="relative flex-1 min-w-40">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
               <input
                 type="text"
                 name="search"
                 defaultValue={search ?? ""}
                 placeholder="Search challenges…"
-                className="h-9 flex-1 min-w-40 rounded-md border border-input bg-background px-3 py-1 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                className="h-9 w-full rounded-lg border border-border bg-background pl-9 pr-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1"
               />
-              <button
-                type="submit"
-                className="h-9 px-4 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+            </div>
+
+            <button
+              type="submit"
+              className="h-9 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors flex items-center gap-1.5"
+            >
+              <Search className="w-3.5 h-3.5" />
+              Filter
+            </button>
+
+            {hasFilters && (
+              <Link
+                href="/challenges"
+                className="h-9 px-3 rounded-lg border border-border text-sm text-muted-foreground hover:text-foreground hover:border-border/80 transition-colors flex items-center"
               >
-                Filter
-              </button>
-            </form>
-          </div>
+                Clear
+              </Link>
+            )}
+          </form>
         </div>
 
-        {/* Grid */}
+        {/* Challenge grid */}
         {challenges.length > 0 ? (
           <>
             <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
@@ -338,22 +362,34 @@ export default async function ChallengesPage({ searchParams }: PageProps) {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-center gap-3 pt-4">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={page <= 1}
-                  asChild={page > 1}
-                >
+              <div className="flex items-center justify-center gap-2 pt-4">
+                <Button variant="outline" size="sm" disabled={page <= 1} asChild={page > 1}>
                   {page > 1 ? (
                     <Link href={buildUrl({ page: String(page - 1) })}>← Prev</Link>
                   ) : (
                     <span>← Prev</span>
                   )}
                 </Button>
-                <span className="text-sm text-muted-foreground">
-                  Page {page} of {totalPages}
-                </span>
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                    const p = totalPages <= 5 ? i + 1 : page <= 3 ? i + 1 : page + i - 2;
+                    if (p < 1 || p > totalPages) return null;
+                    return (
+                      <Link key={p} href={buildUrl({ page: String(p) })}>
+                        <button
+                          className={[
+                            "h-8 w-8 rounded-lg text-sm font-medium transition-colors",
+                            p === page
+                              ? "bg-primary text-primary-foreground"
+                              : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                          ].join(" ")}
+                        >
+                          {p}
+                        </button>
+                      </Link>
+                    );
+                  })}
+                </div>
                 <Button
                   variant="outline"
                   size="sm"
@@ -370,18 +406,27 @@ export default async function ChallengesPage({ searchParams }: PageProps) {
             )}
           </>
         ) : (
-          <Card>
-            <CardContent className="p-12 text-center">
-              <p className="text-4xl mb-3">🔍</p>
+          <Card className="border-dashed">
+            <CardContent className="p-14 text-center">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+                <Search className="w-7 h-7 text-muted-foreground" />
+              </div>
               <p className="font-semibold text-lg">No challenges found</p>
-              <p className="text-sm text-muted-foreground mt-1 mb-4">
-                {search || difficulty || category
+              <p className="text-sm text-muted-foreground mt-1.5 mb-5">
+                {hasFilters
                   ? "Try adjusting your filters or search term."
                   : "Be the first to create a challenge!"}
               </p>
-              {(search || difficulty || category) && (
+              {hasFilters ? (
                 <Button variant="outline" size="sm" asChild>
                   <Link href="/challenges">Clear filters</Link>
+                </Button>
+              ) : (
+                <Button size="sm" asChild>
+                  <Link href="/challenges/create">
+                    <Plus className="w-4 h-4 mr-1.5" />
+                    Create Challenge
+                  </Link>
                 </Button>
               )}
             </CardContent>

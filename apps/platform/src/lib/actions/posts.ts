@@ -1,4 +1,4 @@
-﻿"use server";
+"use server";
 
 import { createClient } from "@/lib/supabase/server";
 import { createPostSchema } from "@/lib/validations/posts";
@@ -122,7 +122,7 @@ export async function createPost(
   } catch {
     return { error: "You must be signed in to create a post." };
   }
-  redirect("/forum/${postId}");
+  redirect(`/forum/${postId}`);
 }
 
 /** Update a post the current user owns. Redirects to the post page on success. */
@@ -165,7 +165,7 @@ export async function updatePost(
     return { error: "You must be signed in to edit this post." };
   }
 
-  redirect("/forum/${postId}");
+  redirect(`/forum/${postId}`);
 }
 
 /** Delete a post the current user owns. */
