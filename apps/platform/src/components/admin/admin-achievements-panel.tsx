@@ -15,7 +15,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Plus, Trash2, Edit, Loader2, Power } from "lucide-react";
+import { Plus, Trash2, Edit, Loader2 } from "lucide-react";
 
 const RARITIES = ["common", "rare", "epic", "legendary"];
 const CATEGORIES = ["activity", "social", "streak", "coding", "special"];
@@ -28,8 +28,10 @@ interface Achievement {
   xp_reward: number;
   rarity: string;
   category: string;
-  is_active: boolean;
-  criteria: Record<string, unknown>;
+  requirement_type: string;
+  requirement_value: number;
+  sort_order: number;
+  created_at: string;
   earned_count?: { count: number }[];
 }
 
@@ -47,7 +49,8 @@ const emptyForm = {
   xp_reward: 100,
   rarity: "common",
   category: "activity",
-  criteria: {},
+  requirement_type: "post_count",
+  requirement_value: 1,
 };
 
 interface Props {
@@ -76,7 +79,8 @@ export function AdminAchievementsPanel({ achievements }: Props) {
       xp_reward: a.xp_reward,
       rarity: a.rarity,
       category: a.category,
-      criteria: a.criteria,
+      requirement_type: a.requirement_type,
+      requirement_value: a.requirement_value,
     });
     setEditTarget(a);
     setShowForm(true);
@@ -95,12 +99,6 @@ export function AdminAchievementsPanel({ achievements }: Props) {
       } catch (e) {
         setError(e instanceof Error ? e.message : "Failed");
       }
-    });
-  }
-
-  function handleToggleActive(a: Achievement) {
-    startTransition(async () => {
-      await updateAchievement(a.id, { is_active: !a.is_active });
     });
   }
 
@@ -138,10 +136,7 @@ export function AdminAchievementsPanel({ achievements }: Props) {
         {achievements.map((a) => {
           const earnedCount = a.earned_count?.[0]?.count ?? 0;
           return (
-            <Card
-              key={a.id}
-              className={`relative transition-opacity ${!a.is_active ? "opacity-50" : ""}`}
-            >
+            <Card key={a.id} className="relative">
               <CardHeader className="pb-2">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2">
@@ -158,16 +153,6 @@ export function AdminAchievementsPanel({ achievements }: Props) {
                     </div>
                   </div>
                   <div className="flex gap-1">
-                    <button
-                      title={a.is_active ? "Deactivate" : "Activate"}
-                      disabled={isPending}
-                      onClick={() => handleToggleActive(a)}
-                      className={`rounded p-1 transition-colors hover:bg-accent disabled:opacity-30 ${
-                        a.is_active ? "text-emerald-400" : "text-muted-foreground"
-                      }`}
-                    >
-                      <Power className="h-3.5 w-3.5" />
-                    </button>
                     <button
                       title="Edit"
                       onClick={() => openEdit(a)}
@@ -196,6 +181,9 @@ export function AdminAchievementsPanel({ achievements }: Props) {
                     <span>{earnedCount} earned</span>
                   </div>
                 </div>
+                <p className="mt-2 text-[10px] text-muted-foreground/60">
+                  {a.requirement_type} ≥ {a.requirement_value}
+                </p>
               </CardContent>
             </Card>
           );
@@ -213,9 +201,7 @@ export function AdminAchievementsPanel({ achievements }: Props) {
           <div className="space-y-3 py-2">
             <div className="grid grid-cols-4 gap-3">
               <div>
-                <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                  Icon
-                </label>
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">Icon</label>
                 <input
                   value={form.icon}
                   onChange={(e) => setForm({ ...form, icon: e.target.value })}
@@ -223,9 +209,7 @@ export function AdminAchievementsPanel({ achievements }: Props) {
                 />
               </div>
               <div className="col-span-3">
-                <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                  Name *
-                </label>
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">Name *</label>
                 <input
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
@@ -236,9 +220,7 @@ export function AdminAchievementsPanel({ achievements }: Props) {
             </div>
 
             <div>
-              <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                Description *
-              </label>
+              <label className="mb-1 block text-xs font-medium text-muted-foreground">Description *</label>
               <textarea
                 value={form.description}
                 onChange={(e) => setForm({ ...form, description: e.target.value })}
@@ -250,53 +232,61 @@ export function AdminAchievementsPanel({ achievements }: Props) {
 
             <div className="grid grid-cols-3 gap-3">
               <div>
-                <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                  Rarity
-                </label>
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">Rarity</label>
                 <select
                   value={form.rarity}
                   onChange={(e) => setForm({ ...form, rarity: e.target.value })}
                   className="w-full rounded-lg border border-border bg-input px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring capitalize"
                 >
-                  {RARITIES.map((r) => (
-                    <option key={r} value={r}>{r}</option>
-                  ))}
+                  {RARITIES.map((r) => <option key={r} value={r}>{r}</option>)}
                 </select>
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                  Category
-                </label>
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">Category</label>
                 <select
                   value={form.category}
                   onChange={(e) => setForm({ ...form, category: e.target.value })}
                   className="w-full rounded-lg border border-border bg-input px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring capitalize"
                 >
-                  {CATEGORIES.map((c) => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
+                  {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                  XP Reward
-                </label>
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">XP Reward</label>
                 <input
                   type="number"
                   min={0}
                   value={form.xp_reward}
-                  onChange={(e) =>
-                    setForm({ ...form, xp_reward: parseInt(e.target.value, 10) || 0 })
-                  }
+                  onChange={(e) => setForm({ ...form, xp_reward: parseInt(e.target.value, 10) || 0 })}
+                  className="w-full rounded-lg border border-border bg-input px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">Requirement Type</label>
+                <input
+                  value={form.requirement_type}
+                  onChange={(e) => setForm({ ...form, requirement_type: e.target.value })}
+                  placeholder="post_count"
+                  className="w-full rounded-lg border border-border bg-input px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">Requirement Value</label>
+                <input
+                  type="number"
+                  min={1}
+                  value={form.requirement_value}
+                  onChange={(e) => setForm({ ...form, requirement_value: parseInt(e.target.value, 10) || 1 })}
                   className="w-full rounded-lg border border-border bg-input px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 />
               </div>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setShowForm(false)}>
-              Cancel
-            </Button>
+            <Button variant="ghost" onClick={() => setShowForm(false)}>Cancel</Button>
             <Button
               disabled={!form.name.trim() || !form.description.trim() || isPending}
               onClick={handleSubmit}
@@ -318,9 +308,7 @@ export function AdminAchievementsPanel({ achievements }: Props) {
             This will also remove all earned records for this achievement.
           </p>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setDeleteTarget(null)}>
-              Cancel
-            </Button>
+            <Button variant="ghost" onClick={() => setDeleteTarget(null)}>Cancel</Button>
             <Button variant="destructive" disabled={isPending} onClick={handleDelete}>
               {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Delete

@@ -76,6 +76,11 @@ export function Header({
           CommitCamp
         </span>
         <VersionBadge className="hidden sm:inline-flex" />
+        {process.env.NODE_ENV === "development" && (
+          <span className="hidden sm:inline-flex items-center rounded-md border border-orange-500/40 bg-orange-500/15 px-1.5 py-0.5 font-mono text-[10px] font-bold leading-none text-orange-500 select-none">
+            DEV
+          </span>
+        )}
       </Link>
 
       <div className="flex-1 px-2 md:px-4 max-w-xs">

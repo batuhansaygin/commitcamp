@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { NotificationBadge } from "@/components/layout/notification-badge";
 import { LevelBadge } from "@/components/profile/level-badge";
-import { createClient } from "@/lib/supabase/client";
+import { useUser } from "@/components/providers/user-provider";
 import { getPopularTags } from "@/lib/actions/search";
 import {
   X,
@@ -32,13 +32,6 @@ interface PlatformSidebarProps {
   onClose: () => void;
 }
 
-interface UserProfile {
-  username: string;
-  display_name: string | null;
-  avatar_url: string | null;
-  level: number;
-}
-
 const STATIC_NAV: {
   href: string;
   icon: typeof Home;
@@ -60,37 +53,17 @@ const MIN_TRENDING_TAGS = 3;
 
 export function PlatformSidebar({ open, onClose }: PlatformSidebarProps) {
   const pathname = usePathname();
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const { profile: userProfile } = useUser();
   const [trendingTags, setTrendingTags] = useState<
     { tag: string; post_count: number }[]
   >([]);
 
   useEffect(() => {
     let cancelled = false;
-
-    async function loadData() {
-      const supabase = createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!cancelled && user) {
-        const { data } = await supabase
-          .from("profiles")
-          .select("username, display_name, avatar_url, level")
-          .eq("id", user.id)
-          .single();
-        if (!cancelled && data) setUserProfile(data as UserProfile);
-      }
-
-      const tags = await getPopularTags(5);
+    getPopularTags(5).then((tags) => {
       if (!cancelled) setTrendingTags(tags);
-    }
-
-    loadData();
-    return () => {
-      cancelled = true;
-    };
+    });
+    return () => { cancelled = true; };
   }, []);
 
   const allNav = [
@@ -212,12 +185,10 @@ export function PlatformSidebar({ open, onClose }: PlatformSidebarProps) {
               <Avatar className="h-8 w-8 shrink-0 ring-1 ring-border">
                 <AvatarImage
                   src={userProfile.avatar_url ?? undefined}
-                  alt={userProfile.username}
+                  alt={userProfile.username ?? ""}
                 />
                 <AvatarFallback className="text-xs font-semibold bg-primary/10 text-primary">
-                  {(
-                    userProfile.display_name || userProfile.username
-                  )
+                  {(userProfile.display_name || userProfile.username || "?")
                     .charAt(0)
                     .toUpperCase()}
                 </AvatarFallback>
