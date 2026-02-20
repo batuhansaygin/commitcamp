@@ -28,6 +28,14 @@ export interface AdminProject {
   task_count?: number;
 }
 
+export interface TaskAttachment {
+  name: string;
+  url: string;
+  type: string;
+  size: number;
+  uploaded_at: string;
+}
+
 export interface AdminTask {
   id: string;
   title: string;
@@ -40,6 +48,7 @@ export interface AdminTask {
   labels: string[];
   position: number;
   project_id: string | null;
+  attachments: TaskAttachment[];
   created_at: string;
   updated_at: string;
   assignee?: AdminProfile | null;
@@ -73,6 +82,24 @@ async function requireAdmin() {
     throw new Error("Forbidden");
   }
   return user;
+}
+
+// ── Label suggestions ─────────────────────────────────────────────────────────
+
+export async function listAllLabels(): Promise<string[]> {
+  await requireAdmin();
+  const admin = createAdminClient();
+
+  const { data } = await admin
+    .from("admin_tasks")
+    .select("labels")
+    .not("labels", "eq", "{}");
+
+  if (!data) return [];
+
+  const all = data.flatMap((t) => t.labels as string[]);
+  const unique = [...new Set(all)].sort((a, b) => a.localeCompare(b));
+  return unique;
 }
 
 // ── Admin user list ───────────────────────────────────────────────────────────
@@ -264,6 +291,7 @@ export async function createTask(input: {
   labels?: string[];
   status?: TaskStatus;
   project_id?: string | null;
+  attachments?: TaskAttachment[];
 }): Promise<AdminTask> {
   const user = await requireAdmin();
   const admin = createAdminClient();
@@ -287,6 +315,7 @@ export async function createTask(input: {
       position: count ?? 0,
       created_by: user.id,
       project_id: input.project_id ?? null,
+      attachments: input.attachments ?? [],
     })
     .select()
     .single();
@@ -308,6 +337,7 @@ export async function updateTask(
     labels: string[];
     position: number;
     project_id: string | null;
+    attachments: TaskAttachment[];
   }>
 ): Promise<void> {
   await requireAdmin();

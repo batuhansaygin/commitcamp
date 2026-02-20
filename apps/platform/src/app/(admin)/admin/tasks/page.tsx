@@ -31,7 +31,7 @@ export default async function AdminTasksPage() {
   ]);
 
   return (
-    <div className="flex h-full min-h-0 overflow-hidden">
+    <div className="flex h-full min-h-0">
       <TaskBoard
         initialTasks={tasks}
         initialProjects={projects}

@@ -3,6 +3,7 @@ import { RARITY_CONFIG } from "@/lib/types/achievements";
 import { RarityBadge } from "@/components/achievements/rarity-badge";
 import { CheckCircle2, Lock } from "lucide-react";
 import type { AchievementProgress } from "@/lib/types/achievements";
+import Image from "next/image";
 
 interface AchievementCardProps {
   progress: AchievementProgress;
@@ -40,15 +41,28 @@ export function AchievementCard({ progress: p, className }: AchievementCardProps
         {/* Icon bubble */}
         <div
           className={cn(
-            "flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border text-2xl",
+            "relative h-12 w-12 shrink-0 overflow-hidden rounded-xl border",
             p.is_unlocked
               ? cn(config.bgClass, config.borderClass)
               : "border-border/50 bg-muted/60"
           )}
         >
-          <span className={cn(!p.is_unlocked && "saturate-0 opacity-60")}>
-            {p.icon}
-          </span>
+          {p.icon_url ? (
+            <Image
+              src={p.icon_url}
+              alt={p.name}
+              fill
+              className={cn("object-cover", !p.is_unlocked && "saturate-0 opacity-60")}
+              sizes="48px"
+            />
+          ) : (
+            <span className={cn(
+              "flex h-full w-full items-center justify-center text-2xl",
+              !p.is_unlocked && "saturate-0 opacity-60"
+            )}>
+              {p.icon}
+            </span>
+          )}
         </div>
 
         {/* Badges */}

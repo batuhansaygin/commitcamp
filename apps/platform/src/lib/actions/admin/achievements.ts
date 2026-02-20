@@ -31,7 +31,7 @@ export async function listAchievementsAdmin() {
   const { data, error } = await admin
     .from("achievements")
     .select(`
-      id, name, description, icon, xp_reward, rarity, category,
+      id, name, description, icon, icon_url, xp_reward, rarity, category,
       requirement_type, requirement_value, sort_order, created_at,
       earned_count:user_achievements(count)
     `)
@@ -46,6 +46,7 @@ export async function createAchievement(input: {
   name: string;
   description: string;
   icon: string;
+  icon_url?: string | null;
   xp_reward: number;
   rarity: string;
   category: string;
@@ -68,6 +69,7 @@ export async function updateAchievement(
     name: string;
     description: string;
     icon: string;
+    icon_url: string | null;
     xp_reward: number;
     rarity: string;
     category: string;

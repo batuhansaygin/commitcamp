@@ -1,4 +1,4 @@
-﻿import { getTranslations, setRequestLocale } from "@/lib/i18n-server";
+import { getTranslations, setRequestLocale } from "@/lib/i18n-server";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
@@ -7,6 +7,7 @@ import { getPosts } from "@/lib/actions/posts";
 import { PostCard } from "@/components/forum/post-card";
 import { ForumTabs } from "@/components/forum/forum-tabs";
 import { ForumViewSwitcher } from "@/components/forum/forum-view-switcher";
+import { ForumLiveUpdater } from "@/components/forum/forum-live-updater";
 import type { PostType } from "@/lib/types/posts";
 import type { Metadata } from "next";
 
@@ -56,6 +57,9 @@ export default async function ForumPage({ params, searchParams }: PageProps) {
           typeParam={validType}
         />
       </div>
+
+      {/* Real-time banner: new posts notification */}
+      <ForumLiveUpdater typeFilter={validType} />
 
       {/* Posts list */}
       {posts.length > 0 ? (

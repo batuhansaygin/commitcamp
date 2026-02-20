@@ -32,7 +32,12 @@ export function TaskCard({ task, onSelect, isDragging }: CardProps) {
 
   return (
     <div
-      onClick={() => onSelect(task)}
+      onClick={(e) => {
+        // Suppress the click that fires right after a drag ends
+        if (isDragging) return;
+        e.stopPropagation();
+        onSelect(task);
+      }}
       className={cn(
         "group cursor-pointer rounded-lg border border-border bg-card p-3 shadow-sm transition-all hover:border-primary/30 hover:shadow-md",
         isDragging && "rotate-2 opacity-80 shadow-xl ring-2 ring-primary/40"
@@ -120,7 +125,7 @@ export function TaskCard({ task, onSelect, isDragging }: CardProps) {
   );
 }
 
-// Sortable wrapper
+// Sortable wrapper — listeners applied to the whole card so any grab initiates drag
 export function SortableTaskCard({ task, onSelect }: Omit<CardProps, "isDragging">) {
   const {
     attributes,
@@ -131,20 +136,24 @@ export function SortableTaskCard({ task, onSelect }: Omit<CardProps, "isDragging
     isDragging,
   } = useSortable({ id: task.id });
 
-  const style = {
+  const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.3 : 1,
+    touchAction: "none",   // critical: prevents browser scroll from stealing the pointer
+    userSelect: "none",    // prevents text selection on drag start
   };
 
   return (
-    <div ref={setNodeRef} style={style} className="relative">
-      {/* Drag handle */}
-      <div
-        {...attributes}
-        {...listeners}
-        className="absolute left-0 top-0 flex h-full w-6 cursor-grab items-center justify-center rounded-l-lg opacity-0 transition-opacity hover:opacity-100 group-hover:opacity-100 active:cursor-grabbing"
-      >
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      className="relative cursor-grab active:cursor-grabbing"
+    >
+      {/* Grip icon — visual hint only, listeners are on the whole wrapper */}
+      <div className="pointer-events-none absolute right-2 top-2 opacity-0 transition-opacity group-hover:opacity-30">
         <GripVertical className="h-3.5 w-3.5 text-muted-foreground" />
       </div>
       <TaskCard task={task} onSelect={onSelect} isDragging={isDragging} />

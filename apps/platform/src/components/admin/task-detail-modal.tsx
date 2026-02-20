@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
+import { useState, useEffect, useTransition, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { Button } from "@/components/ui/button";
 import {
   listTaskComments,
@@ -18,8 +19,16 @@ import {
 import type { AdminTask, AdminProfile, AdminProject, TaskComment, TaskStatus, TaskPriority } from "@/lib/actions/admin/tasks";
 import {
   Calendar, Tag, User2, Flag, Trash2, Save, Loader2,
-  MessageSquare, Send, X, AlertCircle, Folder,
+  MessageSquare, Send, X, AlertCircle, Folder, Paperclip,
 } from "lucide-react";
+import { LabelTagInput } from "@/components/admin/label-tag-input";
+import {
+  TaskAttachmentUploader,
+  uploadPendingFiles,
+  deleteStorageFile,
+  type PendingFile,
+  type TaskAttachment,
+} from "@/components/admin/task-attachment-uploader";
 import { cn } from "@/lib/utils";
 
 const STATUSES: { value: TaskStatus; label: string }[] = [
@@ -45,6 +54,8 @@ const STATUS_COLORS: Record<TaskStatus, string> = {
   done:        "bg-emerald-500/15 text-emerald-400",
 };
 
+type LeftTab = "description" | "attachments";
+
 interface Props {
   task: AdminTask;
   adminUsers: AdminProfile[];
@@ -63,6 +74,7 @@ export function TaskDetailModal({ task, adminUsers, projects, currentUserId, onC
   const [addingComment, setAddingComment] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [leftTab, setLeftTab] = useState<LeftTab>("description");
 
   // Editable fields
   const [title, setTitle] = useState(task.title);
@@ -72,8 +84,13 @@ export function TaskDetailModal({ task, adminUsers, projects, currentUserId, onC
   const [assigneeId, setAssigneeId] = useState<string>(task.assignee_id ?? "");
   const [projectId, setProjectId] = useState<string>(task.project_id ?? "");
   const [dueDate, setDueDate] = useState(task.due_date ?? "");
-  const [labelInput, setLabelInput] = useState(task.labels.join(", "));
+  const [labels, setLabels] = useState<string[]>(task.labels);
   const [dirty, setDirty] = useState(false);
+
+  // Attachments
+  const [attachments, setAttachments] = useState<TaskAttachment[]>(task.attachments ?? []);
+  const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([]);
+  const [removedUrls, setRemovedUrls] = useState<string[]>([]);
 
   useEffect(() => {
     listTaskComments(task.id).then((c) => {
@@ -84,14 +101,52 @@ export function TaskDetailModal({ task, adminUsers, projects, currentUserId, onC
 
   const markDirty = () => setDirty(true);
 
+  // Auto-grow textarea
+  const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setDescription(e.target.value);
+    markDirty();
+    e.target.style.height = "auto";
+    e.target.style.height = `${e.target.scrollHeight}px`;
+  };
+
+  const handleAddPending = useCallback((files: PendingFile[]) => {
+    setPendingFiles((prev) => [...prev, ...files]);
+    markDirty();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleRemovePending = useCallback((index: number) => {
+    setPendingFiles((prev) => {
+      const next = [...prev];
+      const removed = next.splice(index, 1)[0];
+      if (removed.preview) URL.revokeObjectURL(removed.preview);
+      return next;
+    });
+  }, []);
+
+  const handleRemoveAttachment = useCallback((url: string) => {
+    setAttachments((prev) => prev.filter((a) => a.url !== url));
+    setRemovedUrls((prev) => [...prev, url]);
+    markDirty();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleSave = () => {
     setError(null);
     startTransition(async () => {
       try {
-        const labels = labelInput
-          .split(",")
-          .map((l) => l.trim())
-          .filter(Boolean);
+        // Upload new files
+        let finalAttachments = [...attachments];
+        if (pendingFiles.length > 0) {
+          const uploaded = await uploadPendingFiles(task.id, pendingFiles);
+          finalAttachments = [...finalAttachments, ...uploaded];
+          pendingFiles.forEach((f) => { if (f.preview) URL.revokeObjectURL(f.preview); });
+          setPendingFiles([]);
+        }
+
+        // Delete removed files from storage
+        for (const url of removedUrls) {
+          await deleteStorageFile(url);
+        }
+        setRemovedUrls([]);
 
         await updateTask(task.id, {
           title: title.trim(),
@@ -102,7 +157,10 @@ export function TaskDetailModal({ task, adminUsers, projects, currentUserId, onC
           due_date: dueDate || null,
           labels,
           project_id: projectId || null,
+          attachments: finalAttachments,
         });
+
+        setAttachments(finalAttachments);
 
         const selectedProject = projects.find((p) => p.id === projectId) ?? null;
         onUpdated({
@@ -115,6 +173,7 @@ export function TaskDetailModal({ task, adminUsers, projects, currentUserId, onC
           due_date: dueDate || null,
           labels,
           project_id: projectId || null,
+          attachments: finalAttachments,
           assignee: adminUsers.find((u) => u.id === assigneeId) ?? null,
           project: selectedProject,
         });
@@ -161,12 +220,16 @@ export function TaskDetailModal({ task, adminUsers, projects, currentUserId, onC
     }
   };
 
+  const attachmentCount = attachments.length + pendingFiles.length;
+
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="flex h-[90vh] max-w-4xl flex-col gap-0 overflow-hidden p-0">
+      <DialogContent className="flex h-[90vh] max-w-5xl flex-col gap-0 overflow-hidden p-0">
+        <VisuallyHidden><DialogTitle>{task.title}</DialogTitle></VisuallyHidden>
+
         {/* Header */}
         <DialogHeader className="shrink-0 border-b border-border px-6 py-4">
-          <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start gap-4">
             <div className="flex-1 min-w-0">
               <span className={cn("mb-2 inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium", STATUS_COLORS[status])}>
                 {STATUSES.find((s) => s.value === status)?.label}
@@ -178,31 +241,79 @@ export function TaskDetailModal({ task, adminUsers, projects, currentUserId, onC
                 placeholder="Task title..."
               />
             </div>
-            {dirty && (
-              <Button size="sm" onClick={handleSave} disabled={isPending}>
-                {isPending ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : <Save className="mr-2 h-3 w-3" />}
-                Save
-              </Button>
-            )}
           </div>
         </DialogHeader>
 
         {/* Body */}
         <div className="flex flex-1 overflow-hidden">
-          {/* Left — description + comments */}
+          {/* Left — tabs: description / attachments / comments */}
           <div className="flex flex-1 flex-col overflow-hidden border-r border-border">
+            {/* Tab bar */}
+            <div className="flex shrink-0 items-center gap-1 border-b border-border px-4 pt-3 pb-0">
+              <button
+                onClick={() => setLeftTab("description")}
+                className={cn(
+                  "flex items-center gap-1.5 rounded-t-lg border border-b-0 px-3 py-1.5 text-xs font-medium transition-colors",
+                  leftTab === "description"
+                    ? "border-border bg-background text-foreground"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <MessageSquare className="h-3.5 w-3.5" />
+                Description
+              </button>
+              <button
+                onClick={() => setLeftTab("attachments")}
+                className={cn(
+                  "flex items-center gap-1.5 rounded-t-lg border border-b-0 px-3 py-1.5 text-xs font-medium transition-colors",
+                  leftTab === "attachments"
+                    ? "border-border bg-background text-foreground"
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <Paperclip className="h-3.5 w-3.5" />
+                Attachments
+                {attachmentCount > 0 && (
+                  <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary/20 px-1 text-[10px] font-bold text-primary">
+                    {attachmentCount}
+                  </span>
+                )}
+              </button>
+            </div>
+
+            {/* Tab content + comments */}
             <div className="flex-1 overflow-y-auto px-6 py-4 space-y-5">
-              {/* Description */}
-              <div>
-                <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Description</label>
-                <textarea
-                  value={description}
-                  onChange={(e) => { setDescription(e.target.value); markDirty(); }}
-                  rows={5}
-                  placeholder="Add a detailed description..."
-                  className="w-full rounded-lg border border-border bg-input px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none"
-                />
-              </div>
+              {leftTab === "description" ? (
+                <div>
+                  <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
+                    Description / Detail
+                  </label>
+                  <textarea
+                    value={description}
+                    onChange={handleDescriptionChange}
+                    rows={6}
+                    placeholder="Add a detailed description or notes about this task..."
+                    style={{ minHeight: "144px", resize: "vertical" }}
+                    className="w-full overflow-hidden rounded-lg border border-border bg-input px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  />
+                </div>
+              ) : (
+                <div>
+                  <TaskAttachmentUploader
+                    attachments={attachments}
+                    onRemoveAttachment={handleRemoveAttachment}
+                    pendingFiles={pendingFiles}
+                    onAddPending={handleAddPending}
+                    onRemovePending={handleRemovePending}
+                    uploading={isPending && pendingFiles.length > 0}
+                  />
+                  {dirty && pendingFiles.length > 0 && (
+                    <p className="mt-2 text-[11px] text-muted-foreground">
+                      Files will be uploaded when you click Save.
+                    </p>
+                  )}
+                </div>
+              )}
 
               {/* Error */}
               {error && (
@@ -295,7 +406,7 @@ export function TaskDetailModal({ task, adminUsers, projects, currentUserId, onC
           </div>
 
           {/* Right sidebar — metadata */}
-          <div className="w-60 shrink-0 overflow-y-auto px-4 py-4 space-y-4">
+          <div className="w-64 shrink-0 overflow-y-auto px-4 py-4 space-y-4">
             {/* Status */}
             <div>
               <label className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
@@ -376,6 +487,7 @@ export function TaskDetailModal({ task, adminUsers, projects, currentUserId, onC
               <input
                 type="date"
                 value={dueDate}
+                min={new Date().toISOString().split("T")[0]}
                 onChange={(e) => { setDueDate(e.target.value); markDirty(); }}
                 className="w-full rounded-lg border border-border bg-input px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               />
@@ -387,13 +499,10 @@ export function TaskDetailModal({ task, adminUsers, projects, currentUserId, onC
                 <Tag className="h-3.5 w-3.5" />
                 Labels
               </label>
-              <input
-                value={labelInput}
-                onChange={(e) => { setLabelInput(e.target.value); markDirty(); }}
-                placeholder="feature, bug, design"
-                className="w-full rounded-lg border border-border bg-input px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              <LabelTagInput
+                value={labels}
+                onChange={(next) => { setLabels(next); markDirty(); }}
               />
-              <p className="mt-1 text-[10px] text-muted-foreground">Comma-separated</p>
             </div>
 
             {/* Creator info */}
@@ -454,6 +563,17 @@ export function TaskDetailModal({ task, adminUsers, projects, currentUserId, onC
               )}
             </div>
           </div>
+        </div>
+
+        {/* ── Footer ───────────────────────────────────────────────────── */}
+        <div className="flex shrink-0 items-center justify-end gap-2 border-t border-border px-6 py-3">
+          <Button variant="ghost" onClick={onClose} disabled={isPending}>
+            Cancel
+          </Button>
+          <Button onClick={handleSave} disabled={!dirty || isPending}>
+            {isPending ? <Loader2 className="mr-2 h-3 w-3 animate-spin" /> : <Save className="mr-2 h-3 w-3" />}
+            Save Changes
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
