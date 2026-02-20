@@ -1,17 +1,21 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
-// Routes that require authentication
 const PROTECTED_ROUTES = [
   "/feed",
   "/snippets/new",
   "/messages",
   "/settings",
-  "/admin",
 ];
+
+const ADMIN_ROUTES = ["/admin"];
 
 function isProtectedRoute(pathname: string): boolean {
   return PROTECTED_ROUTES.some((route) => pathname.includes(route));
+}
+
+function isAdminRoute(pathname: string): boolean {
+  return ADMIN_ROUTES.some((route) => pathname.startsWith(route));
 }
 
 export async function middleware(request: NextRequest) {
@@ -38,18 +42,31 @@ export async function middleware(request: NextRequest) {
     },
   });
 
-  // Refresh session
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   const { pathname } = request.nextUrl;
 
-  // Protect routes that require auth
-  if (isProtectedRoute(pathname) && !user) {
+  // Unauthenticated users → redirect to login
+  if ((isProtectedRoute(pathname) || isAdminRoute(pathname)) && !user) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("redirect", pathname);
     return NextResponse.redirect(loginUrl);
+  }
+
+  // Admin routes → require admin or system_admin role
+  if (isAdminRoute(pathname) && user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    const role = profile?.role as string | undefined;
+    if (role !== "admin" && role !== "system_admin") {
+      return NextResponse.redirect(new URL("/feed", request.url));
+    }
   }
 
   // Redirect authenticated users away from auth pages

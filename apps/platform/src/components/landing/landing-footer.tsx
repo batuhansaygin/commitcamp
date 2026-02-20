@@ -26,8 +26,8 @@ const RESOURCE_LINKS: FooterLink[] = [
 
 const COMPANY_LINKS: FooterLink[] = [
   { labelKey: "about", href: "#", comingSoon: true },
-  { labelKey: "privacy", href: "/privacy" },
-  { labelKey: "terms", href: "/terms" },
+  { labelKey: "privacy", href: "/privacy-policy" },
+  { labelKey: "terms", href: "/terms-of-service" },
   { labelKey: "contact", href: "mailto:support@commitcamp.com" },
 ];
 

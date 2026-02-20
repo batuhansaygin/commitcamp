@@ -1,35 +1,60 @@
-﻿import { setRequestLocale } from "@/lib/i18n-server";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Suspense } from "react";
+import { listUsers } from "@/lib/actions/admin/users";
+import { AdminUsersTable } from "@/components/admin/admin-users-table";
+import { Card, CardContent } from "@/components/ui/card";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "User Management",
-  description: "Manage CommitCamp users.",
+  title: "User Management — Admin",
 };
 
 interface PageProps {
-  params: Promise<{ locale: string }>;
+  searchParams: Promise<{ search?: string; role?: string; page?: string }>;
 }
 
-export default async function AdminUsersPage({ params }: PageProps) {
+async function UsersContent({ searchParams }: PageProps) {
+  const params = await searchParams;
+  const search = params.search ?? "";
+  const role = params.role ?? "";
+  const page = Math.max(1, parseInt(params.page ?? "1", 10));
+  const limit = 50;
+  const offset = (page - 1) * limit;
 
+  const { users, total } = await listUsers(search, role, limit, offset);
+
+  return (
+    <AdminUsersTable
+      users={users}
+      total={total}
+      page={page}
+      limit={limit}
+      search={search}
+      roleFilter={role}
+    />
+  );
+}
+
+export default function AdminUsersPage(props: PageProps) {
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">User Management</h1>
-        <p className="text-sm text-muted-foreground">View and manage platform users.</p>
+        <p className="text-sm text-muted-foreground">
+          View, search, and manage all platform users.
+        </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Users</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">
-            Connect Supabase to see users. User data will appear here with role management.
-          </div>
-        </CardContent>
-      </Card>
+      <Suspense
+        fallback={
+          <Card>
+            <CardContent className="flex h-64 items-center justify-center">
+              <div className="text-sm text-muted-foreground">Loading users…</div>
+            </CardContent>
+          </Card>
+        }
+      >
+        <UsersContent {...props} />
+      </Suspense>
     </div>
   );
 }

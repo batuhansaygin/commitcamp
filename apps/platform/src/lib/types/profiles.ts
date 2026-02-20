@@ -11,7 +11,7 @@ export interface Profile {
   github_username: string | null;
   twitter_username: string | null;
   tech_stack: string[];
-  role: "user" | "moderator" | "admin";
+  role: "user" | "moderator" | "admin" | "system_admin";
   is_verified: boolean;
   allow_private_messages: boolean;
   discord_user_id: string | null;

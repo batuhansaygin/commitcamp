@@ -1,37 +1,50 @@
-import { Header } from "@/components/layout/header";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { AdminSidebar } from "@/components/admin/admin-sidebar";
 
-interface AdminLayoutProps {
+export default async function AdminLayout({
+  children,
+}: {
   children: React.ReactNode;
-}
+}) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-export default async function AdminLayout({ children }: AdminLayoutProps) {
+  if (!user) redirect("/login");
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role, display_name, username")
+    .eq("id", user.id)
+    .single();
+
+  if (!profile || !["admin", "system_admin"].includes(profile.role)) {
+    redirect("/feed");
+  }
+
   return (
-    <div className="flex min-h-screen flex-col">
-      <Header />
-      <div className="flex flex-1">
-        <aside className="hidden w-60 border-r border-border bg-card/50 md:block">
-          <div className="p-4">
-            <h2 className="mb-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Admin Panel
-            </h2>
-            <nav className="space-y-1">
-              {[
-                { href: "/admin", label: "Dashboard", icon: "📊" },
-                { href: "/admin/users", label: "Users", icon: "👥" },
-                { href: "/admin/reports", label: "Reports", icon: "📋" },
-              ].map((item) => (
-                <a
-                  key={item.href}
-                  href={item.href}
-                  className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                >
-                  <span>{item.icon}</span>
-                  {item.label}
-                </a>
-              ))}
-            </nav>
+    <div className="flex min-h-screen">
+      <AdminSidebar userRole={profile.role} />
+
+      <div className="flex flex-1 flex-col min-w-0">
+        {/* Top bar */}
+        <header className="flex items-center justify-between border-b border-border bg-card/30 px-6 py-3">
+          <div />
+          <div className="flex items-center gap-3 text-sm text-muted-foreground">
+            <span>
+              Signed in as{" "}
+              <span className="font-medium text-foreground">
+                {profile.display_name ?? profile.username}
+              </span>
+            </span>
+            <span className="rounded border border-border bg-muted/40 px-2 py-0.5 text-[10px] capitalize font-medium">
+              {profile.role.replace("_", " ")}
+            </span>
           </div>
-        </aside>
+        </header>
+
         <main className="flex-1 overflow-y-auto p-6">{children}</main>
       </div>
     </div>

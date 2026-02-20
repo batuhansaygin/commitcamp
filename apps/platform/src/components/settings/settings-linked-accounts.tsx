@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { clearProviderProfileFields } from "@/lib/actions/linked-accounts";
 import {
@@ -101,6 +102,7 @@ interface Props {
 
 export function SettingsLinkedAccounts({ initialIdentities, hasPassword }: Props) {
   const supabase = createClient();
+  const router = useRouter();
   const [identities, setIdentities] = useState<SerializedIdentity[]>(initialIdentities);
   const [linkingProvider, setLinkingProvider] = useState<string | null>(null);
   const [unlinkTarget, setUnlinkTarget] = useState<SerializedIdentity | null>(null);
@@ -151,7 +153,7 @@ export function SettingsLinkedAccounts({ initialIdentities, hasPassword }: Props
       // 2. Clear related profile fields server-side
       await clearProviderProfileFields(unlinkTarget.provider);
 
-      // 3. Update local state
+      // 3. Update local state optimistically
       setIdentities((prev) =>
         prev.filter((i) => i.identity_id !== unlinkTarget.identity_id)
       );
@@ -159,6 +161,9 @@ export function SettingsLinkedAccounts({ initialIdentities, hasPassword }: Props
       setSuccessMsg(`${unlinkTarget.provider.charAt(0).toUpperCase() + unlinkTarget.provider.slice(1)} account disconnected.`);
       setTimeout(() => setSuccessMsg(null), 3000);
       setUnlinkTarget(null);
+
+      // 4. Refresh server component so page reload also shows correct state
+      router.refresh();
     });
   }
 

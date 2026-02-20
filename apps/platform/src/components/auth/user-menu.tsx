@@ -57,7 +57,7 @@ export function UserMenu() {
     );
   }
 
-  const isAdmin = user.user_metadata?.role === "admin";
+  const isAdmin = ["admin", "system_admin"].includes(user.user_metadata?.role as string);
   const displayName = user.user_metadata?.full_name || user.email?.split("@")[0] || "User";
   const initial = displayName.charAt(0).toUpperCase();
 
