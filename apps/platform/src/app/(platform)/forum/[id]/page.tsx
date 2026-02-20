@@ -1,4 +1,4 @@
-﻿import { getTranslations, setRequestLocale } from "@/lib/i18n-server";
+import { getTranslations, setRequestLocale } from "@/lib/i18n-server";
 import { notFound } from "next/navigation";
 import { Link } from "@/i18n/navigation";
 import { Badge } from "@/components/ui/badge";
@@ -121,10 +121,11 @@ export default async function PostDetailPage({ params }: PageProps) {
 
       {/* Post content */}
       <Card>
-        <CardContent className="prose prose-sm max-w-none p-6">
-          <div className="whitespace-pre-wrap text-sm leading-relaxed">
-            {post.content}
-          </div>
+        <CardContent className="p-6">
+          <div
+            className="prose prose-sm dark:prose-invert max-w-none text-sm leading-relaxed"
+            dangerouslySetInnerHTML={{ __html: post.content }}
+          />
         </CardContent>
       </Card>
 

@@ -65,10 +65,11 @@ export function PostCard({
   const level = post.profiles?.level ?? 1;
   const typeStyle = TYPE_COLORS[post.type] ?? TYPE_COLORS.discussion!;
 
+  const plainContent = post.content.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
   const contentPreview =
-    post.content.length > CONTENT_PREVIEW_LENGTH
-      ? post.content.slice(0, CONTENT_PREVIEW_LENGTH).trim() + "…"
-      : post.content;
+    plainContent.length > CONTENT_PREVIEW_LENGTH
+      ? plainContent.slice(0, CONTENT_PREVIEW_LENGTH).trim() + "…"
+      : plainContent;
 
   const initial = authorName.charAt(0).toUpperCase();
 
@@ -148,7 +149,7 @@ export function PostCard({
           {variant === "flow" && (
             <p className="text-xs text-muted-foreground leading-relaxed line-clamp-1">
               {contentPreview}
-              {post.content.length > CONTENT_PREVIEW_LENGTH && (
+              {plainContent.length > CONTENT_PREVIEW_LENGTH && (
                 <span className="ml-1 font-medium text-primary">
                   {readMoreLabel}
                 </span>

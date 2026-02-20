@@ -9,6 +9,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import {
   Dialog,
   DialogContent,
@@ -365,12 +366,11 @@ export function AdminAchievementsPanel({ achievements }: Props) {
             {/* Description */}
             <div>
               <label className="mb-1 block text-xs font-medium text-muted-foreground">Description *</label>
-              <textarea
+              <RichTextEditor
                 value={form.description}
-                onChange={(e) => setForm({ ...form, description: e.target.value })}
-                rows={2}
+                onChange={(html) => setForm({ ...form, description: html })}
                 placeholder="Publish your very first post"
-                className="w-full resize-none rounded-lg border border-border bg-input px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                minHeight="80px"
               />
             </div>
 

@@ -16,12 +16,13 @@ import {
   updateTask,
   deleteTask,
 } from "@/lib/actions/admin/tasks";
-import type { AdminTask, AdminProfile, AdminProject, TaskComment, TaskStatus, TaskPriority } from "@/lib/actions/admin/tasks";
+import type { AdminTask, AdminProfile, AdminProject, TaskComment, TaskCommentAttachment, TaskStatus, TaskPriority } from "@/lib/actions/admin/tasks";
 import {
   Calendar, Tag, User2, Flag, Trash2, Save, Loader2,
   MessageSquare, Send, X, AlertCircle, Folder, Paperclip,
 } from "lucide-react";
 import { LabelTagInput } from "@/components/admin/label-tag-input";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import {
   TaskAttachmentUploader,
   uploadPendingFiles,
@@ -71,6 +72,7 @@ export function TaskDetailModal({ task, adminUsers, projects, currentUserId, onC
   const [comments, setComments] = useState<TaskComment[]>([]);
   const [commentsLoading, setCommentsLoading] = useState(true);
   const [newComment, setNewComment] = useState("");
+  const [commentPendingFiles, setCommentPendingFiles] = useState<PendingFile[]>([]);
   const [addingComment, setAddingComment] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -101,12 +103,9 @@ export function TaskDetailModal({ task, adminUsers, projects, currentUserId, onC
 
   const markDirty = () => setDirty(true);
 
-  // Auto-grow textarea
-  const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setDescription(e.target.value);
+  const handleDescriptionChange = (html: string) => {
+    setDescription(html);
     markDirty();
-    e.target.style.height = "auto";
-    e.target.style.height = `${e.target.scrollHeight}px`;
   };
 
   const handleAddPending = useCallback((files: PendingFile[]) => {
@@ -136,7 +135,7 @@ export function TaskDetailModal({ task, adminUsers, projects, currentUserId, onC
         // Upload new files
         let finalAttachments = [...attachments];
         if (pendingFiles.length > 0) {
-          const uploaded = await uploadPendingFiles(task.id, pendingFiles);
+          const uploaded = await uploadPendingFiles(task.id, pendingFiles, "task-attachments");
           finalAttachments = [...finalAttachments, ...uploaded];
           pendingFiles.forEach((f) => { if (f.preview) URL.revokeObjectURL(f.preview); });
           setPendingFiles([]);
@@ -197,10 +196,24 @@ export function TaskDetailModal({ task, adminUsers, projects, currentUserId, onC
   };
 
   const handleAddComment = async () => {
-    if (!newComment.trim()) return;
+    const isEmpty = !newComment || newComment.replace(/<[^>]*>/g, "").trim() === "";
+    if (isEmpty && commentPendingFiles.length === 0) return;
     setAddingComment(true);
     try {
-      await addTaskComment(task.id, newComment.trim());
+      let uploadedAttachments: TaskCommentAttachment[] = [];
+      if (commentPendingFiles.length > 0) {
+        const uploaded = await uploadPendingFiles(`comment-${task.id}-${Date.now()}`, commentPendingFiles, "task-comment-attachments");
+        uploadedAttachments = uploaded.map((a) => ({
+          name: a.name,
+          url: a.url,
+          type: a.type,
+          size: a.size,
+          uploaded_at: a.uploaded_at,
+        }));
+        commentPendingFiles.forEach((f) => { if (f.preview) URL.revokeObjectURL(f.preview); });
+        setCommentPendingFiles([]);
+      }
+      await addTaskComment(task.id, isEmpty ? "" : newComment, uploadedAttachments);
       const updated = await listTaskComments(task.id);
       setComments(updated);
       setNewComment("");
@@ -288,13 +301,11 @@ export function TaskDetailModal({ task, adminUsers, projects, currentUserId, onC
                   <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
                     Description / Detail
                   </label>
-                  <textarea
+                  <RichTextEditor
                     value={description}
                     onChange={handleDescriptionChange}
-                    rows={6}
                     placeholder="Add a detailed description or notes about this task..."
-                    style={{ minHeight: "144px", resize: "vertical" }}
-                    className="w-full overflow-hidden rounded-lg border border-border bg-input px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                    minHeight="160px"
                   />
                 </div>
               ) : (
@@ -367,7 +378,26 @@ export function TaskDetailModal({ task, adminUsers, projects, currentUserId, onC
                               )}
                             </div>
                           </div>
-                          <p className="mt-1 rounded-lg bg-muted/40 px-3 py-2 text-sm">{comment.content}</p>
+                          <div
+                            className="mt-1 rounded-lg bg-muted/40 px-3 py-2 text-sm prose prose-sm dark:prose-invert max-w-none [&_p]:my-0 [&_ul]:my-1 [&_ol]:my-1"
+                            dangerouslySetInnerHTML={{ __html: comment.content }}
+                          />
+                          {comment.attachments?.length > 0 && (
+                            <div className="mt-1.5 flex flex-wrap gap-1.5">
+                              {comment.attachments.map((att) => (
+                                <a
+                                  key={att.url}
+                                  href={att.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-1 rounded-md border border-border bg-muted/40 px-2 py-0.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+                                >
+                                  <Paperclip className="h-2.5 w-2.5" />
+                                  {att.name}
+                                </a>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -381,25 +411,64 @@ export function TaskDetailModal({ task, adminUsers, projects, currentUserId, onC
             </div>
 
             {/* Comment input */}
-            <div className="shrink-0 border-t border-border px-6 py-3">
-              <div className="flex gap-2">
-                <textarea
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) handleAddComment();
-                  }}
-                  rows={2}
-                  placeholder="Write a comment... (Ctrl+Enter to send)"
-                  className="flex-1 resize-none rounded-lg border border-border bg-input px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                />
+            <div className="shrink-0 border-t border-border px-6 py-3 space-y-2">
+              <RichTextEditor
+                value={newComment}
+                onChange={setNewComment}
+                placeholder="Write a comment..."
+                minHeight="72px"
+              />
+              {/* Comment pending attachments preview */}
+              {commentPendingFiles.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {commentPendingFiles.map((f, i) => (
+                    <div key={i} className="flex items-center gap-1 rounded-md border border-border bg-muted/40 px-2 py-0.5 text-[11px] text-muted-foreground">
+                      {f.preview ? (
+                        <img src={f.preview} alt={f.file.name} className="h-4 w-4 rounded object-cover" />
+                      ) : (
+                        <Paperclip className="h-2.5 w-2.5" />
+                      )}
+                      <span className="max-w-[120px] truncate">{f.file.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => setCommentPendingFiles((prev) => { const next = [...prev]; if (f.preview) URL.revokeObjectURL(f.preview!); next.splice(i, 1); return next; })}
+                        className="text-muted-foreground hover:text-destructive"
+                      >
+                        <X className="h-2.5 w-2.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="flex items-center justify-between gap-2">
+                {/* Attach file button */}
+                <label className="flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                  <Paperclip className="h-3.5 w-3.5" />
+                  <span>Attach</span>
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*,video/mp4,video/webm,application/pdf,.doc,.docx,.txt"
+                    className="sr-only"
+                    onChange={(e) => {
+                      const files = Array.from(e.target.files ?? []);
+                      const pending: PendingFile[] = files.map((file) => ({
+                        file,
+                        preview: file.type.startsWith("image/") ? URL.createObjectURL(file) : undefined,
+                      }));
+                      setCommentPendingFiles((prev) => [...prev, ...pending]);
+                      e.target.value = "";
+                    }}
+                  />
+                </label>
                 <Button
-                  size="icon"
+                  size="sm"
                   onClick={handleAddComment}
-                  disabled={!newComment.trim() || addingComment}
-                  className="self-end"
+                  disabled={addingComment}
+                  className="gap-1.5"
                 >
-                  {addingComment ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                  {addingComment ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+                  Send
                 </Button>
               </div>
             </div>
