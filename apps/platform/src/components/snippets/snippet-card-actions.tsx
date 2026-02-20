@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Heart, MessageCircle, Bookmark, Share2, Check } from "lucide-react";
-import { toggleReaction } from "@/lib/actions/reactions";
-import { createClient } from "@/lib/supabase/client";
+import { useCardActions } from "@/hooks/use-card-actions";
 import { cn } from "@/lib/utils";
 
 interface SnippetCardActionsProps {
@@ -11,85 +10,14 @@ interface SnippetCardActionsProps {
 }
 
 export function SnippetCardActions({ snippetId }: SnippetCardActionsProps) {
-  const [likeCount, setLikeCount] = useState(0);
-  const [isLiked, setIsLiked] = useState(false);
-  const [isBookmarked, setIsBookmarked] = useState(false);
+  const { likeCount, isLiked, isBookmarked, handleLike, handleBookmark } =
+    useCardActions(snippetId, "snippet", "/snippets");
+
   const [shared, setShared] = useState(false);
-
-  useEffect(() => {
-    const supabase = createClient();
-
-    (async () => {
-      const [{ count }, { data: { user } }] = await Promise.all([
-        supabase
-          .from("reactions")
-          .select("*", { count: "exact", head: true })
-          .eq("target_type", "snippet")
-          .eq("target_id", snippetId),
-        supabase.auth.getUser(),
-      ]);
-
-      setLikeCount(count ?? 0);
-
-      if (user) {
-        const [{ data: reaction }, { data: bookmark }] = await Promise.all([
-          supabase
-            .from("reactions")
-            .select("user_id")
-            .eq("user_id", user.id)
-            .eq("target_type", "snippet")
-            .eq("target_id", snippetId)
-            .maybeSingle(),
-          supabase
-            .from("bookmarks")
-            .select("user_id")
-            .eq("user_id", user.id)
-            .eq("target_type", "snippet")
-            .eq("target_id", snippetId)
-            .maybeSingle(),
-        ]);
-        setIsLiked(!!reaction);
-        setIsBookmarked(!!bookmark);
-      }
-    })();
-  }, [snippetId]);
 
   const stopAll = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-  };
-
-  const handleLike = async (e: React.MouseEvent) => {
-    stopAll(e);
-    const next = !isLiked;
-    setIsLiked(next);
-    setLikeCount((c) => Math.max(0, next ? c + 1 : c - 1));
-    await toggleReaction("snippet", snippetId, "like", "/snippets");
-  };
-
-  const handleBookmark = async (e: React.MouseEvent) => {
-    stopAll(e);
-    const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const next = !isBookmarked;
-    setIsBookmarked(next);
-
-    if (next) {
-      await supabase
-        .from("bookmarks")
-        .insert({ user_id: user.id, target_type: "snippet", target_id: snippetId });
-    } else {
-      await supabase
-        .from("bookmarks")
-        .delete()
-        .eq("user_id", user.id)
-        .eq("target_type", "snippet")
-        .eq("target_id", snippetId);
-    }
   };
 
   const handleShare = async (e: React.MouseEvent) => {
@@ -147,9 +75,7 @@ export function SnippetCardActions({ snippetId }: SnippetCardActionsProps) {
           isBookmarked ? "text-primary" : "text-muted-foreground hover:text-foreground"
         )}
       >
-        <Bookmark
-          className={cn("h-3.5 w-3.5", isBookmarked && "fill-current")}
-        />
+        <Bookmark className={cn("h-3.5 w-3.5", isBookmarked && "fill-current")} />
       </button>
 
       {/* Share */}

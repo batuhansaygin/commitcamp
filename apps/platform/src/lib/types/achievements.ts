@@ -22,6 +22,7 @@ export interface Achievement {
   category: AchievementCategory;
   rarity: AchievementRarity;
   icon: string;
+  icon_url: string | null;
   xp_reward: number;
   requirement_type: string;
   requirement_value: number;
@@ -43,6 +44,7 @@ export interface AchievementProgress {
   category: AchievementCategory;
   rarity: AchievementRarity;
   icon: string;
+  icon_url: string | null;
   xp_reward: number;
   requirement_type: string;
   requirement_value: number;

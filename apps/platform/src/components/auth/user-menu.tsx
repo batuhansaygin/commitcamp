@@ -102,12 +102,6 @@ export function UserMenu() {
               <div className="min-w-0">
                 <p className="truncate text-sm font-medium">{displayName}</p>
                 <p className="truncate text-xs text-muted-foreground">{user.email}</p>
-                {isAdmin && (
-                  <div className="mt-0.5 flex items-center text-xs text-blue-accent">
-                    <Shield className="mr-1 h-3 w-3" />
-                    {profile?.role === "system_admin" ? "System Admin" : "Admin"}
-                  </div>
-                )}
               </div>
             </div>
 

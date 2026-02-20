@@ -1,10 +1,11 @@
-﻿import { getTranslations, setRequestLocale } from "@/lib/i18n-server";
+import { getTranslations, setRequestLocale } from "@/lib/i18n-server";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
 import { Plus, Code2 } from "lucide-react";
 import { getSnippets } from "@/lib/actions/snippets";
 import { SnippetCard } from "@/components/snippets/snippet-card";
+import { SnippetsLiveUpdater } from "@/components/snippets/snippets-live-updater";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = { title: "Snippets" };
@@ -32,6 +33,9 @@ export default async function SnippetsPage({ params }: PageProps) {
           </Button>
         </Link>
       </div>
+
+      {/* Real-time banner: new snippets notification */}
+      <SnippetsLiveUpdater />
 
       {/* Snippet grid */}
       {snippets.length > 0 ? (

@@ -104,15 +104,129 @@ export async function getUserAchievements(
 export async function getUserAchievementProgress(
   userId: string
 ): Promise<AchievementProgress[]> {
-  try {
-    const supabase = await createClient();
-    const { data } = await supabase.rpc("get_user_achievement_progress", {
-      p_user_id: userId,
-    });
-    return (data ?? []) as AchievementProgress[];
-  } catch {
-    return [];
+  const supabase = await createClient();
+
+  // Try RPC first
+  const { data: rpcData, error: rpcError } = await supabase.rpc(
+    "get_user_achievement_progress",
+    { p_user_id: userId }
+  );
+
+  if (!rpcError && rpcData && (rpcData as unknown[]).length > 0) {
+    return rpcData as AchievementProgress[];
   }
+
+  if (rpcError) {
+    console.error("[getUserAchievementProgress] RPC error:", rpcError.message);
+  }
+
+  // Fallback: build progress from direct queries
+  const [
+    { data: allAchievements },
+    { data: unlocked },
+    { data: profile },
+    { count: commentsCount },
+    { count: snippetsCount },
+    { data: userPosts },
+  ] = await Promise.all([
+    supabase.from("achievements").select("*").order("sort_order"),
+    supabase
+      .from("user_achievements")
+      .select("achievement_id, unlocked_at")
+      .eq("user_id", userId),
+    supabase
+      .from("profiles")
+      .select(
+        "posts_count, followers_count, following_count, xp_points, level, current_streak, longest_streak, challenges_solved, duel_wins"
+      )
+      .eq("id", userId)
+      .single(),
+    supabase
+      .from("comments")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", userId),
+    supabase
+      .from("snippets")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", userId),
+    supabase.from("posts").select("id").eq("user_id", userId),
+  ]);
+
+  if (!allAchievements) return [];
+
+  // Count reactions on user's posts
+  let reactionsCount = 0;
+  const postIds = (userPosts ?? []).map((p) => p.id);
+  if (postIds.length > 0) {
+    const { count } = await supabase
+      .from("reactions")
+      .select("*", { count: "exact", head: true })
+      .eq("target_type", "post")
+      .in("target_id", postIds);
+    reactionsCount = count ?? 0;
+  }
+
+  const p = profile as {
+    posts_count?: number;
+    followers_count?: number;
+    following_count?: number;
+    xp_points?: number;
+    level?: number;
+    current_streak?: number;
+    longest_streak?: number;
+    challenges_solved?: number;
+    duel_wins?: number;
+  } | null;
+
+  const unlockedMap = new Map<string, string>(
+    (unlocked ?? []).map((u) => [u.achievement_id, u.unlocked_at])
+  );
+
+  const getValue = (reqType: string): number => {
+    switch (reqType) {
+      case "posts_count":       return p?.posts_count ?? 0;
+      case "comments_count":    return commentsCount ?? 0;
+      case "snippets_count":    return snippetsCount ?? 0;
+      case "followers_count":   return p?.followers_count ?? 0;
+      case "following_count":   return p?.following_count ?? 0;
+      case "xp_points":         return p?.xp_points ?? 0;
+      case "level":             return p?.level ?? 1;
+      case "current_streak":    return p?.current_streak ?? 0;
+      case "longest_streak":    return p?.longest_streak ?? 0;
+      case "reactions_received": return reactionsCount;
+      case "challenges_solved": return p?.challenges_solved ?? 0;
+      case "duel_wins":         return p?.duel_wins ?? 0;
+      default:                  return 0;
+    }
+  };
+
+  return (allAchievements as Achievement[]).map((a) => {
+    const isUnlocked = unlockedMap.has(a.id);
+    const unlockedAt = unlockedMap.get(a.id) ?? null;
+    const currentValue = Math.min(getValue(a.requirement_type), a.requirement_value);
+    const progressPercent =
+      a.requirement_value === 0
+        ? 100
+        : Math.min(100, Math.round((currentValue * 100) / a.requirement_value));
+
+    return {
+      id: a.id,
+      name: a.name,
+      description: a.description,
+      category: a.category,
+      rarity: a.rarity,
+      icon: a.icon,
+      icon_url: a.icon_url,
+      xp_reward: a.xp_reward,
+      requirement_type: a.requirement_type,
+      requirement_value: a.requirement_value,
+      sort_order: a.sort_order,
+      current_value: currentValue,
+      is_unlocked: isUnlocked,
+      unlocked_at: unlockedAt,
+      progress_percent: progressPercent,
+    } satisfies AchievementProgress;
+  });
 }
 
 /** Compute aggregate achievement stats for a user. */

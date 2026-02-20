@@ -9,6 +9,7 @@ import { RARITY_CONFIG } from "@/lib/types/achievements";
 import { RarityBadge } from "@/components/achievements/rarity-badge";
 import type { Achievement } from "@/lib/types/achievements";
 import { Lock } from "lucide-react";
+import Image from "next/image";
 
 interface AchievementBadgeProps {
   achievement: Achievement;
@@ -54,7 +55,7 @@ export function AchievementBadge({
   const badge = (
     <div
       className={cn(
-        "relative flex items-center justify-center rounded-xl border transition-all duration-200 cursor-default",
+        "relative flex items-center justify-center rounded-xl border transition-all duration-200 cursor-default overflow-hidden",
         sizeConfig.outer,
         sizeConfig.ring,
         isUnlocked
@@ -63,11 +64,19 @@ export function AchievementBadge({
         className
       )}
     >
-      <span
-        className={cn(sizeConfig.emoji, !isUnlocked && "saturate-0 opacity-70")}
-      >
-        {achievement.icon}
-      </span>
+      {achievement.icon_url ? (
+        <Image
+          src={achievement.icon_url}
+          alt={achievement.name}
+          fill
+          className={cn("object-cover", !isUnlocked && "saturate-0 opacity-70")}
+          sizes="64px"
+        />
+      ) : (
+        <span className={cn(sizeConfig.emoji, !isUnlocked && "saturate-0 opacity-70")}>
+          {achievement.icon}
+        </span>
+      )}
       {!isUnlocked && (
         <div className="absolute -bottom-0.5 -right-0.5 flex items-center justify-center rounded-full bg-background border border-border/60 p-0.5">
           <Lock className={cn(sizeConfig.lock, "text-muted-foreground")} />
@@ -90,7 +99,7 @@ export function AchievementBadge({
           className="z-[200] max-w-[200px] text-center space-y-1.5 p-3 rounded-xl border border-border shadow-lg"
         >
           <p className="font-semibold text-sm">
-            {achievement.icon} {achievement.name}
+            {!achievement.icon_url && achievement.icon + " "}{achievement.name}
           </p>
           <p className="text-xs text-muted-foreground leading-snug">
             {achievement.description}

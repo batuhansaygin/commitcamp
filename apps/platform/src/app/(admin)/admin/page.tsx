@@ -93,14 +93,7 @@ async function DashboardContent() {
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Dashboard</h1>
-        <p className="text-sm text-muted-foreground">
-          Live overview of the CommitCamp platform.
-        </p>
-      </div>
-
+    <div className="h-full overflow-y-auto p-6 space-y-6">
       {/* Stats grid */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {statCards.map((stat) => (
