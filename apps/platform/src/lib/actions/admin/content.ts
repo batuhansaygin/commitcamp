@@ -125,17 +125,30 @@ export async function listCommentsAdmin(
   await requireAdmin();
   const admin = createAdminClient();
 
-  const { data, count, error } = await admin
+  const { data: comments, count, error } = await admin
     .from("comments")
-    .select(`
-      id, content, created_at,
-      author:profiles!comments_user_id_fkey(username, display_name)
-    `, { count: "exact" })
+    .select("id, content, created_at, user_id", { count: "exact" })
     .order("created_at", { ascending: false })
     .range(offset, offset + limit - 1);
 
   if (error) throw new Error(error.message);
-  return { comments: data ?? [], total: count ?? 0 };
+
+  const userIds = [...new Set((comments ?? []).map((c) => c.user_id))];
+  const { data: profiles } = userIds.length
+    ? await admin
+        .from("profiles")
+        .select("id, username, display_name")
+        .in("id", userIds)
+    : { data: [] };
+
+  const profileMap = new Map((profiles ?? []).map((p) => [p.id, p]));
+
+  const data = (comments ?? []).map((c) => ({
+    ...c,
+    author: profileMap.get(c.user_id) ?? null,
+  }));
+
+  return { comments: data, total: count ?? 0 };
 }
 
 export async function deleteComment(commentId: string): Promise<void> {
