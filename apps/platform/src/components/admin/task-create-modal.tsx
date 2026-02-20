@@ -23,6 +23,7 @@ import {
   uploadPendingFiles,
   type PendingFile,
 } from "@/components/admin/task-attachment-uploader";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import {
   Calendar,
   Tag,
@@ -106,10 +107,8 @@ export function TaskCreateModal({
     });
   }, []);
 
-  const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setDescription(e.target.value);
-    e.target.style.height = "auto";
-    e.target.style.height = `${e.target.scrollHeight}px`;
+  const handleDescriptionChange = (html: string) => {
+    setDescription(html);
   };
 
   const handleCreate = () => {
@@ -131,7 +130,7 @@ export function TaskCreateModal({
         });
 
         if (pendingFiles.length > 0) {
-          const uploaded = await uploadPendingFiles(task.id, pendingFiles);
+          const uploaded = await uploadPendingFiles(task.id, pendingFiles, "task-attachments");
           if (uploaded.length > 0) {
             const { updateTask } = await import("@/lib/actions/admin/tasks");
             await updateTask(task.id, { attachments: uploaded });
@@ -223,13 +222,11 @@ export function TaskCreateModal({
                   <label className="mb-1.5 block text-xs font-medium text-muted-foreground">
                     Description / Detail
                   </label>
-                  <textarea
+                  <RichTextEditor
                     value={description}
                     onChange={handleDescriptionChange}
-                    rows={6}
                     placeholder="Add a detailed description or notes about this task..."
-                    style={{ minHeight: "144px", resize: "vertical" }}
-                    className="w-full overflow-hidden rounded-lg border border-border bg-input px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                    minHeight="160px"
                   />
                 </div>
               ) : (

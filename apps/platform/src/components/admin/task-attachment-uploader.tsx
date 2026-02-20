@@ -288,8 +288,9 @@ export function TaskAttachmentUploader({
 // ── Upload helper (called from modal on save) ─────────────────────────────────
 
 export async function uploadPendingFiles(
-  taskId: string,
-  pendingFiles: PendingFile[]
+  folder: string,
+  pendingFiles: PendingFile[],
+  bucket = "task-attachments"
 ): Promise<TaskAttachment[]> {
   if (pendingFiles.length === 0) return [];
 
@@ -299,10 +300,10 @@ export async function uploadPendingFiles(
   for (const { file } of pendingFiles) {
     const ext = file.name.split(".").pop();
     const safeName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-    const path = `${taskId}/${safeName}`;
+    const path = `${folder}/${safeName}`;
 
     const { error } = await supabase.storage
-      .from("task-attachments")
+      .from(bucket)
       .upload(path, file, { contentType: file.type, upsert: false });
 
     if (error) {
@@ -311,7 +312,7 @@ export async function uploadPendingFiles(
     }
 
     const { data: { publicUrl } } = supabase.storage
-      .from("task-attachments")
+      .from(bucket)
       .getPublicUrl(path);
 
     uploaded.push({

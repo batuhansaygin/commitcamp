@@ -1,18 +1,32 @@
-﻿"use client";
+"use client";
 
-import { useActionState } from "react";
+import { useState } from "react";
 import { useTranslations } from "@/lib/i18n";
 import { createPost } from "@/lib/actions/posts";
 import { POST_TYPES } from "@/lib/types/posts";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { Loader2, AlertCircle } from "lucide-react";
 
-interface PostFormProps {}
+type ActionState = { error?: string };
 
-export function PostForm(_: PostFormProps) {
+export function PostForm() {
   const t = useTranslations("forum");
-  const [state, action, pending] = useActionState(createPost, {});
+  const [content, setContent] = useState("");
+  const [state, setState] = useState<ActionState>({});
+  const [pending, setPending] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setPending(true);
+    setState({});
+    const formData = new FormData(e.currentTarget);
+    formData.set("content", content);
+    const result = await createPost({}, formData);
+    setState(result ?? {});
+    setPending(false);
+  };
 
   return (
     <Card>
@@ -20,7 +34,7 @@ export function PostForm(_: PostFormProps) {
         <CardTitle>{t("newPost")}</CardTitle>
       </CardHeader>
       <CardContent>
-        <form action={action} className="space-y-4">          {/* Error message */}
+        <form onSubmit={handleSubmit} className="space-y-4">
           {state.error && (
             <div className="flex items-center gap-2 rounded-lg border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
               <AlertCircle className="h-4 w-4 shrink-0" />
@@ -72,21 +86,14 @@ export function PostForm(_: PostFormProps) {
 
           {/* Content */}
           <div>
-            <label
-              htmlFor="content"
-              className="mb-1 block text-xs font-medium text-muted-foreground"
-            >
+            <label className="mb-1 block text-xs font-medium text-muted-foreground">
               {t("content")} *
             </label>
-            <textarea
-              id="content"
-              name="content"
-              required
-              minLength={10}
-              maxLength={10000}
-              rows={10}
-              className="w-full rounded-lg border border-border bg-input p-3 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-ring"
+            <RichTextEditor
+              value={content}
+              onChange={setContent}
               placeholder={t("contentPlaceholder")}
+              minHeight="200px"
             />
           </div>
 

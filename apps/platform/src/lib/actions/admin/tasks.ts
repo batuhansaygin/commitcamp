@@ -57,11 +57,20 @@ export interface AdminTask {
   comment_count?: number;
 }
 
+export interface TaskCommentAttachment {
+  name: string;
+  url: string;
+  type: string;
+  size: number;
+  uploaded_at: string;
+}
+
 export interface TaskComment {
   id: string;
   task_id: string;
   user_id: string;
   content: string;
+  attachments: TaskCommentAttachment[];
   created_at: string;
   updated_at: string;
   author?: AdminProfile | null;
@@ -401,7 +410,11 @@ export async function listTaskComments(taskId: string): Promise<TaskComment[]> {
   }));
 }
 
-export async function addTaskComment(taskId: string, content: string): Promise<void> {
+export async function addTaskComment(
+  taskId: string,
+  content: string,
+  attachments: TaskCommentAttachment[] = []
+): Promise<void> {
   const user = await requireAdmin();
   const admin = createAdminClient();
 
@@ -409,6 +422,7 @@ export async function addTaskComment(taskId: string, content: string): Promise<v
     task_id: taskId,
     user_id: user.id,
     content: content.trim(),
+    attachments,
   });
 
   if (error) throw new Error(error.message);

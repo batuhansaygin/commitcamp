@@ -1,21 +1,36 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
-import { useActionState } from "react";
 import { useTranslations } from "@/lib/i18n";
 import { createSnippet } from "@/lib/actions/snippets";
 import { SNIPPET_LANGUAGES } from "@/lib/types/snippets";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import { cn } from "@/lib/utils";
 import { Loader2, AlertCircle, Globe, Lock } from "lucide-react";
 
 interface SnippetFormProps {}
 
+type ActionState = { error?: string };
+
 export function SnippetForm(_: SnippetFormProps) {
   const t = useTranslations("snippets");
-  const [state, action, pending] = useActionState(createSnippet, {});
+  const [description, setDescription] = useState("");
   const [isPublic, setIsPublic] = useState(true);
+  const [state, setState] = useState<ActionState>({});
+  const [pending, setPending] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setPending(true);
+    setState({});
+    const formData = new FormData(e.currentTarget);
+    formData.set("description", description);
+    const result = await createSnippet({}, formData);
+    setState(result ?? {});
+    setPending(false);
+  };
 
   return (
     <Card>
@@ -23,7 +38,7 @@ export function SnippetForm(_: SnippetFormProps) {
         <CardTitle>{t("newSnippet")}</CardTitle>
       </CardHeader>
       <CardContent>
-        <form action={action} className="space-y-4">          {/* Error message */}
+        <form onSubmit={handleSubmit} className="space-y-4">          {/* Error message */}
           {state.error && (
             <div className="flex items-center gap-2 rounded-lg border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
               <AlertCircle className="h-4 w-4 shrink-0" />
@@ -98,19 +113,14 @@ export function SnippetForm(_: SnippetFormProps) {
 
           {/* Description */}
           <div>
-            <label
-              htmlFor="description"
-              className="mb-1 block text-xs font-medium text-muted-foreground"
-            >
+            <label className="mb-1 block text-xs font-medium text-muted-foreground">
               {t("description")}
             </label>
-            <textarea
-              id="description"
-              name="description"
-              maxLength={500}
-              rows={3}
-              className="w-full rounded-lg border border-border bg-input p-3 text-sm resize-y focus:outline-none focus:ring-2 focus:ring-ring"
+            <RichTextEditor
+              value={description}
+              onChange={setDescription}
               placeholder={t("descriptionPlaceholder")}
+              minHeight="100px"
             />
           </div>
 
