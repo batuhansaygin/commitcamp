@@ -5,28 +5,46 @@ import { useRouter } from "@/i18n/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
-import { User, Settings, LogOut, Shield, Loader2 } from "lucide-react";
+import { Settings, LogOut, Shield, Loader2 } from "lucide-react";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
+
+interface Profile {
+  role: string;
+  avatar_url: string | null;
+  display_name: string | null;
+}
 
 export function UserMenu() {
   const router = useRouter();
   const [user, setUser] = useState<SupabaseUser | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+
+  const fetchProfile = async (userId: string) => {
+    const supabase = createClient();
+    const { data } = await supabase
+      .from("profiles")
+      .select("role, avatar_url, display_name")
+      .eq("id", userId)
+      .single();
+    if (data) setProfile(data);
+  };
 
   useEffect(() => {
     const supabase = createClient();
 
     supabase.auth.getUser().then(({ data: { user } }) => {
       setUser(user);
+      if (user) fetchProfile(user.id);
       setLoading(false);
     });
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      const u = session?.user ?? null;
+      setUser(u);
+      if (u) fetchProfile(u.id);
     });
 
     return () => subscription.unsubscribe();
@@ -37,6 +55,7 @@ export function UserMenu() {
     const supabase = createClient();
     await supabase.auth.signOut();
     setUser(null);
+    setProfile(null);
     setMenuOpen(false);
     setSigningOut(false);
     router.push("/");
@@ -57,19 +76,39 @@ export function UserMenu() {
     );
   }
 
-  const isAdmin = ["admin", "system_admin"].includes(user.user_metadata?.role as string);
-  const displayName = user.user_metadata?.full_name || user.email?.split("@")[0] || "User";
+  const isAdmin = ["admin", "system_admin"].includes(profile?.role ?? "");
+  const displayName =
+    profile?.display_name ||
+    user.user_metadata?.full_name ||
+    user.email?.split("@")[0] ||
+    "User";
+  const avatarUrl =
+    profile?.avatar_url ||
+    user.user_metadata?.avatar_url ||
+    user.user_metadata?.picture ||
+    null;
   const initial = displayName.charAt(0).toUpperCase();
 
   return (
     <div className="relative">
       <button
         onClick={() => setMenuOpen(!menuOpen)}
-        className="relative flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-cyan-accent to-purple-accent text-sm font-bold text-white transition-transform hover:scale-105 cursor-pointer"
+        className="relative flex h-9 w-9 items-center justify-center rounded-full overflow-hidden bg-gradient-to-br from-cyan-accent to-purple-accent text-sm font-bold text-white transition-transform hover:scale-105 cursor-pointer"
       >
-        {initial}
+        {avatarUrl ? (
+          <img
+            src={avatarUrl}
+            alt={displayName}
+            className="h-full w-full object-cover"
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).style.display = "none";
+            }}
+          />
+        ) : (
+          initial
+        )}
         {isAdmin && (
-          <div className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-blue-accent">
+          <div className="absolute -bottom-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-blue-accent z-10">
             <Shield className="h-2 w-2 text-white" />
           </div>
         )}
@@ -79,16 +118,45 @@ export function UserMenu() {
         <>
           <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
           <div className="absolute right-0 top-full z-50 mt-2 w-56 rounded-lg border border-border bg-card p-1 shadow-lg">
-            <div className="border-b border-border px-3 py-2">
-              <p className="text-sm font-medium">{displayName}</p>
-              <p className="text-xs text-muted-foreground">{user.email}</p>
-              {isAdmin && (
-                <div className="mt-1 flex items-center text-xs text-blue-accent">
-                  <Shield className="mr-1 h-3 w-3" />
-                  Administrator
-                </div>
-              )}
+            {/* User info header */}
+            <div className="flex items-center gap-3 border-b border-border px-3 py-2.5">
+              <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full overflow-hidden bg-gradient-to-br from-cyan-accent to-purple-accent text-sm font-bold text-white">
+                {avatarUrl ? (
+                  <img
+                    src={avatarUrl}
+                    alt={displayName}
+                    className="h-full w-full object-cover"
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).style.display = "none";
+                    }}
+                  />
+                ) : (
+                  initial
+                )}
+              </div>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium">{displayName}</p>
+                <p className="truncate text-xs text-muted-foreground">{user.email}</p>
+                {isAdmin && (
+                  <div className="mt-0.5 flex items-center text-xs text-blue-accent">
+                    <Shield className="mr-1 h-3 w-3" />
+                    {profile?.role === "system_admin" ? "System Admin" : "Admin"}
+                  </div>
+                )}
+              </div>
             </div>
+
+            {/* Admin Panel — only for admins, above Settings */}
+            {isAdmin && (
+              <Link
+                href="/admin"
+                onClick={() => setMenuOpen(false)}
+                className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-blue-accent hover:bg-blue-accent/10 transition-colors"
+              >
+                <Shield className="h-4 w-4" />
+                Admin Panel
+              </Link>
+            )}
 
             <Link
               href="/settings"
@@ -99,16 +167,7 @@ export function UserMenu() {
               Settings
             </Link>
 
-            {isAdmin && (
-              <Link
-                href="/admin"
-                onClick={() => setMenuOpen(false)}
-                className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-accent transition-colors"
-              >
-                <Shield className="h-4 w-4" />
-                Admin Panel
-              </Link>
-            )}
+            <div className="my-1 border-t border-border" />
 
             <button
               onClick={handleSignOut}
