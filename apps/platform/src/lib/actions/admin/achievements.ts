@@ -31,11 +31,12 @@ export async function listAchievementsAdmin() {
   const { data, error } = await admin
     .from("achievements")
     .select(`
-      id, name, description, icon, xp_reward, rarity, category, is_active, criteria,
+      id, name, description, icon, xp_reward, rarity, category,
+      requirement_type, requirement_value, sort_order, created_at,
       earned_count:user_achievements(count)
     `)
     .order("category")
-    .order("name");
+    .order("sort_order");
 
   if (error) throw new Error(error.message);
   return data ?? [];
@@ -48,15 +49,13 @@ export async function createAchievement(input: {
   xp_reward: number;
   rarity: string;
   category: string;
-  criteria: Record<string, unknown>;
+  requirement_type: string;
+  requirement_value: number;
 }): Promise<void> {
   await requireAdmin();
   const admin = createAdminClient();
 
-  const { error } = await admin.from("achievements").insert({
-    ...input,
-    is_active: true,
-  });
+  const { error } = await admin.from("achievements").insert(input);
   if (error) throw new Error(error.message);
 
   await logAdminAction("create_achievement", "achievement", null, { name: input.name });
@@ -72,8 +71,9 @@ export async function updateAchievement(
     xp_reward: number;
     rarity: string;
     category: string;
-    is_active: boolean;
-    criteria: Record<string, unknown>;
+    requirement_type: string;
+    requirement_value: number;
+    sort_order: number;
   }>
 ): Promise<void> {
   await requireAdmin();

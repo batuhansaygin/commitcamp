@@ -36,10 +36,7 @@ export async function listPostsAdmin(
 
   let query = admin
     .from("posts")
-    .select(`
-      id, title, type, is_solved, created_at,
-      author:profiles!posts_user_id_fkey(username, display_name)
-    `, { count: "exact" })
+    .select("id, title, type, is_solved, created_at, user_id", { count: "exact" })
     .order("created_at", { ascending: false })
     .range(offset, offset + limit - 1);
 
@@ -47,9 +44,18 @@ export async function listPostsAdmin(
     query = query.ilike("title", `%${search}%`);
   }
 
-  const { data, count, error } = await query;
+  const { data: posts, count, error } = await query;
   if (error) throw new Error(error.message);
-  return { posts: data ?? [], total: count ?? 0 };
+
+  const userIds = [...new Set((posts ?? []).map((p) => p.user_id))];
+  const { data: profiles } = userIds.length
+    ? await admin.from("profiles").select("id, username, display_name").in("id", userIds)
+    : { data: [] };
+
+  const profileMap = new Map((profiles ?? []).map((p) => [p.id, p]));
+  const data = (posts ?? []).map((p) => ({ ...p, author: profileMap.get(p.user_id) ?? null }));
+
+  return { posts: data, total: count ?? 0 };
 }
 
 export async function deletePost(postId: string): Promise<void> {
@@ -81,10 +87,7 @@ export async function listSnippetsAdmin(
 
   let query = admin
     .from("snippets")
-    .select(`
-      id, title, language, is_public, created_at,
-      author:profiles!snippets_user_id_fkey(username, display_name)
-    `, { count: "exact" })
+    .select("id, title, language, is_public, created_at, user_id", { count: "exact" })
     .order("created_at", { ascending: false })
     .range(offset, offset + limit - 1);
 
@@ -92,9 +95,18 @@ export async function listSnippetsAdmin(
     query = query.ilike("title", `%${search}%`);
   }
 
-  const { data, count, error } = await query;
+  const { data: snippets, count, error } = await query;
   if (error) throw new Error(error.message);
-  return { snippets: data ?? [], total: count ?? 0 };
+
+  const userIds = [...new Set((snippets ?? []).map((s) => s.user_id))];
+  const { data: profiles } = userIds.length
+    ? await admin.from("profiles").select("id, username, display_name").in("id", userIds)
+    : { data: [] };
+
+  const profileMap = new Map((profiles ?? []).map((p) => [p.id, p]));
+  const data = (snippets ?? []).map((s) => ({ ...s, author: profileMap.get(s.user_id) ?? null }));
+
+  return { snippets: data, total: count ?? 0 };
 }
 
 export async function deleteSnippet(snippetId: string): Promise<void> {

@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { Link, usePathname } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
-import { createClient } from "@/lib/supabase/client";
 import { NotificationBadge } from "@/components/layout/notification-badge";
+import { useUser } from "@/components/providers/user-provider";
 import { Home, MessageSquare, Search, Bell, User } from "lucide-react";
 
 interface NavTab {
@@ -23,34 +23,12 @@ const STATIC_TABS: NavTab[] = [
 
 export function BottomNav() {
   const pathname = usePathname();
-  const [profileUsername, setProfileUsername] = useState<string | null>(null);
-
-  useEffect(() => {
-    const supabase = createClient();
-    let cancelled = false;
-
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user && !cancelled) {
-        supabase
-          .from("profiles")
-          .select("username")
-          .eq("id", user.id)
-          .single()
-          .then(({ data }) => {
-            if (!cancelled && data) setProfileUsername(data.username);
-          });
-      }
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const { profile } = useUser();
 
   const tabs: NavTab[] = [
     ...STATIC_TABS,
-    ...(profileUsername
-      ? [{ href: `/profile/${profileUsername}`, icon: User, label: "Profile" }]
+    ...(profile?.username
+      ? [{ href: `/profile/${profile.username}`, icon: User, label: "Profile" }]
       : []),
   ];
 

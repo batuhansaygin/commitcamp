@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "@/lib/i18n";
@@ -6,7 +6,7 @@ import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { NotificationItem } from "@/components/notifications/notification-item";
 import { useNotifications } from "@/hooks/use-notifications";
-import { createClient } from "@/lib/supabase/client";
+import { useUser } from "@/components/providers/user-provider";
 import { Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -112,14 +112,9 @@ function NotificationBellInner({ userId }: { userId: string }) {
 
 /** Renders the notification bell only when a user is authenticated. */
 export function NotificationBell() {
-  const [userId, setUserId] = useState<string | null>(null);
+  const { user, isLoading } = useUser();
 
-  useEffect(() => {
-    createClient()
-      .auth.getUser()
-      .then(({ data: { user } }) => setUserId(user?.id ?? null));
-  }, []);
-
-  if (!userId) return null;
-  return <NotificationBellInner userId={userId} />;
+  if (isLoading) return <div className="h-9 w-9" />;
+  if (!user) return null;
+  return <NotificationBellInner userId={user.id} />;
 }

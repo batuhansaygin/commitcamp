@@ -1,69 +1,34 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
-import { Settings, LogOut, Shield, Loader2 } from "lucide-react";
-import type { User as SupabaseUser } from "@supabase/supabase-js";
-
-interface Profile {
-  role: string;
-  avatar_url: string | null;
-  display_name: string | null;
-}
+import { Settings, LogOut, Shield } from "lucide-react";
+import { useUser } from "@/components/providers/user-provider";
 
 export function UserMenu() {
   const router = useRouter();
-  const [user, setUser] = useState<SupabaseUser | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { user, profile, isLoading } = useUser();
   const [menuOpen, setMenuOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
-
-  const fetchProfile = async (userId: string) => {
-    const supabase = createClient();
-    const { data } = await supabase
-      .from("profiles")
-      .select("role, avatar_url, display_name")
-      .eq("id", userId)
-      .single();
-    if (data) setProfile(data);
-  };
-
-  useEffect(() => {
-    const supabase = createClient();
-
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setUser(user);
-      if (user) fetchProfile(user.id);
-      setLoading(false);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      const u = session?.user ?? null;
-      setUser(u);
-      if (u) fetchProfile(u.id);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
 
   const handleSignOut = async () => {
     setSigningOut(true);
     const supabase = createClient();
     await supabase.auth.signOut();
-    setUser(null);
-    setProfile(null);
     setMenuOpen(false);
     setSigningOut(false);
     router.push("/");
     router.refresh();
   };
 
-  if (loading) {
-    return <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />;
+  // Show skeleton avatar while loading (no flash, no layout shift)
+  if (isLoading) {
+    return (
+      <div className="h-9 w-9 animate-pulse rounded-full bg-muted" />
+    );
   }
 
   if (!user) {

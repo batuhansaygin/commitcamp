@@ -1,43 +1,45 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Link } from "@/i18n/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { getUnreadNotificationCount } from "@/lib/actions/notifications";
+import { useUser } from "@/components/providers/user-provider";
 
 export function NotificationBadge() {
+  const { user } = useUser();
   const [count, setCount] = useState<number | null>(null);
   const channelRef = useRef<ReturnType<ReturnType<typeof createClient>["channel"]> | null>(null);
 
   useEffect(() => {
+    if (!user) return;
     getUnreadNotificationCount().then(setCount);
-  }, []);
+  }, [user]);
 
   useEffect(() => {
+    if (!user) return;
+
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) return;
-      channelRef.current = supabase
-        .channel("notifications-badge")
-        .on(
-          "postgres_changes",
-          {
-            event: "*",
-            schema: "public",
-            table: "notifications",
-            filter: `user_id=eq.${user.id}`,
-          },
-          () => {
-            getUnreadNotificationCount().then(setCount);
-          }
-        )
-        .subscribe();
-    });
+    channelRef.current = supabase
+      .channel(`notifications-badge:${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "notifications",
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => {
+          getUnreadNotificationCount().then(setCount);
+        }
+      )
+      .subscribe();
+
     return () => {
       if (channelRef.current) supabase.removeChannel(channelRef.current);
       channelRef.current = null;
     };
-  }, []);
+  }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (count === null || count === 0) return null;
 

@@ -11,6 +11,7 @@ import {
   ScrollText,
   Shield,
   ChevronRight,
+  KanbanSquare,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -20,6 +21,11 @@ const NAV_ITEMS = [
     label: "Dashboard",
     icon: LayoutDashboard,
     exact: true,
+  },
+  {
+    href: "/admin/tasks",
+    label: "Task Board",
+    icon: KanbanSquare,
   },
   {
     href: "/admin/users",

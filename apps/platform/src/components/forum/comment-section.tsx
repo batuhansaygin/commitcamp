@@ -1,11 +1,12 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { useTranslations } from "@/lib/i18n";
 import { Link } from "@/i18n/navigation";
 import { addComment } from "@/lib/actions/comments";
 import { Button } from "@/components/ui/button";
 import { User, Loader2, AlertCircle, CheckCircle2, MessageSquare } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 import type { CommentWithAuthor } from "@/lib/types/posts";
 
 interface CommentSectionProps {
@@ -32,13 +33,17 @@ function timeAgo(dateStr: string): string {
 export function CommentSection({
   targetType,
   targetId,
-  comments,
+  comments: initialComments,
   isAuthenticated,
 }: CommentSectionProps) {
   const t = useTranslations("forum");
   const [state, action, pending] = useActionState(addComment, {});
   const formRef = useRef<HTMLFormElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Local state starts with SSR-rendered comments, then receives real-time updates
+  const [liveComments, setLiveComments] =
+    useState<CommentWithAuthor[]>(initialComments);
 
   // Reset the form and focus textarea after a successful comment submission
   useEffect(() => {
@@ -48,17 +53,84 @@ export function CommentSection({
     }
   }, [state.success]);
 
+  // Supabase Realtime — live comment updates without page refresh
+  useEffect(() => {
+    const supabase = createClient();
+
+    const channel = supabase
+      .channel(`comments:${targetType}:${targetId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "comments",
+          filter: `target_id=eq.${targetId}`,
+        },
+        async (payload) => {
+          const newComment = payload.new as { id: string; user_id: string; content: string; created_at: string; target_type: string; target_id: string; parent_id: string | null };
+
+          // Avoid duplicating comments we already have in state
+          setLiveComments((prev) => {
+            if (prev.some((c) => c.id === newComment.id)) return prev;
+
+            // Fetch author profile in the background, then update state with it
+            supabase
+              .from("profiles")
+              .select("username, display_name, avatar_url, level")
+              .eq("id", newComment.user_id)
+              .single()
+              .then(({ data: authorProfile }) => {
+                setLiveComments((p) =>
+                  p.map((c) =>
+                    c.id === newComment.id
+                      ? {
+                          ...c,
+                          profiles: authorProfile as CommentWithAuthor["profiles"],
+                        }
+                      : c
+                  )
+                );
+              });
+
+            return [
+              ...prev,
+              { ...newComment, profiles: null } as CommentWithAuthor,
+            ];
+          });
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "DELETE",
+          schema: "public",
+          table: "comments",
+          filter: `target_id=eq.${targetId}`,
+        },
+        (payload) => {
+          const deleted = payload.old as { id: string };
+          setLiveComments((prev) => prev.filter((c) => c.id !== deleted.id));
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [targetType, targetId]);
+
   return (
     <div className="space-y-4">
       <h3 className="flex items-center gap-2 text-sm font-semibold">
         <MessageSquare className="h-4 w-4 text-muted-foreground" />
-        {t("comments")} ({comments.length})
+        {t("comments")} ({liveComments.length})
       </h3>
 
       {/* Comments list */}
-      {comments.length > 0 ? (
+      {liveComments.length > 0 ? (
         <div className="space-y-3">
-          {comments.map((comment) => {
+          {liveComments.map((comment) => {
             const name =
               comment.profiles?.display_name ||
               comment.profiles?.username ||
@@ -66,7 +138,7 @@ export function CommentSection({
             return (
               <div
                 key={comment.id}
-                className="rounded-lg border border-border bg-muted/30 p-3 space-y-2"
+                className="rounded-lg border border-border bg-muted/30 p-3 space-y-2 animate-in fade-in slide-in-from-bottom-1 duration-200"
               >
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <div className="flex items-center gap-1.5">
