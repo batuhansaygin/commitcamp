@@ -14,13 +14,13 @@ interface ContestCardProps {
 
 const STATUS_CONFIG: Record<ContestStatus, { label: string; className: string }> = {
   upcoming: { label: "Upcoming", className: "bg-blue-500/12 text-blue-500 border-blue-500/30" },
-  active:   { label: "Live",     className: "bg-green-500/12 text-green-500 border-green-500/30 animate-pulse" },
+  active:   { label: "Live",     className: "bg-emerald-500/15 text-emerald-500 border-emerald-500/30 animate-pulse" },
   ended:    { label: "Ended",    className: "bg-muted text-muted-foreground border-border/60" },
 };
 
 const ICON_CONFIG: Record<ContestStatus, { bg: string; color: string }> = {
   upcoming: { bg: "bg-blue-500/12 ring-1 ring-blue-500/20",  color: "text-blue-500"  },
-  active:   { bg: "bg-green-500/12 ring-1 ring-green-500/20", color: "text-green-500" },
+  active:   { bg: "bg-emerald-500/15 ring-1 ring-emerald-500/20", color: "text-emerald-500" },
   ended:    { bg: "bg-muted",                                 color: "text-muted-foreground" },
 };
 
@@ -47,7 +47,7 @@ export function ContestCard({ contest, showJoinButton = true }: ContestCardProps
     <Card
       className={[
         "group cursor-pointer transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5",
-        isActive ? "border-green-500/35 bg-green-500/[0.02]" : "hover:border-primary/20",
+        isActive ? "border-emerald-500/30 bg-emerald-500/[0.02]" : "hover:border-primary/20",
       ].join(" ")}
       onClick={() => router.push(`/challenges/contests/${contest.id}`)}
     >

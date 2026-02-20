@@ -117,6 +117,9 @@ $$;
 
 -- ── 6. check_and_award_achievements RPC ──────────────────────────────────────
 
+-- Drop first so we can freely change the return type if needed
+DROP FUNCTION IF EXISTS public.check_and_award_achievements(uuid) CASCADE;
+
 CREATE OR REPLACE FUNCTION public.check_and_award_achievements(p_user_id uuid)
 RETURNS uuid[]
 LANGUAGE plpgsql
@@ -190,6 +193,8 @@ END;
 $$;
 
 -- ── 7. get_user_achievement_progress RPC ─────────────────────────────────────
+
+DROP FUNCTION IF EXISTS public.get_user_achievement_progress(uuid) CASCADE;
 
 CREATE OR REPLACE FUNCTION public.get_user_achievement_progress(p_user_id uuid)
 RETURNS TABLE (

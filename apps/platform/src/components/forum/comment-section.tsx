@@ -107,7 +107,7 @@ export function CommentSection({
           )}
 
           {state.success && (
-            <div className="flex items-center gap-2 rounded-lg border border-green-500/30 bg-green-500/10 px-3 py-2 text-xs text-green-600 dark:text-green-400">
+            <div className="flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-600 dark:text-emerald-400">
               <CheckCircle2 className="h-3 w-3 shrink-0" />
               Comment posted!
             </div>

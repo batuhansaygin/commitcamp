@@ -248,8 +248,8 @@ export const DIFFICULTY_CONFIG: Record<
 > = {
   easy: {
     label: "Easy",
-    color: "#22c55e",
-    bgClass: "bg-green-500/10 text-green-500 border-green-500/20",
+    color: "#10b981",
+    bgClass: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
   },
   medium: {
     label: "Medium",
@@ -272,23 +272,13 @@ export const RANK_CONFIG: Record<
   ChallengeRank,
   { label: string; color: string; icon: string; minSolved: number }
 > = {
-  unranked: { label: "Unranked", color: "#6b7280", icon: "—", minSolved: 0 },
-  bronze: { label: "Bronze", color: "#CD7F32", icon: "🥉", minSolved: 1 },
-  silver: { label: "Silver", color: "#C0C0C0", icon: "🥈", minSolved: 11 },
-  gold: { label: "Gold", color: "#FFD700", icon: "🥇", minSolved: 31 },
-  platinum: {
-    label: "Platinum",
-    color: "#E5E4E2",
-    icon: "💎",
-    minSolved: 61,
-  },
-  diamond: { label: "Diamond", color: "#B9F2FF", icon: "💠", minSolved: 101 },
-  grandmaster: {
-    label: "Grandmaster",
-    color: "#FF4500",
-    icon: "👑",
-    minSolved: 201,
-  },
+  unranked:    { label: "Unranked",    color: "#71717a", icon: "—",  minSolved: 0 },
+  bronze:      { label: "Bronze",      color: "#cd7f32", icon: "🥉", minSolved: 1 },
+  silver:      { label: "Silver",      color: "#94a3b8", icon: "🥈", minSolved: 11 },
+  gold:        { label: "Gold",        color: "#fbbf24", icon: "🥇", minSolved: 31 },
+  platinum:    { label: "Platinum",    color: "#67e8f9", icon: "💎", minSolved: 61 },
+  diamond:     { label: "Diamond",     color: "#818cf8", icon: "💠", minSolved: 101 },
+  grandmaster: { label: "Grandmaster", color: "#f97316", icon: "👑", minSolved: 201 },
 };
 
 export const CATEGORY_CONFIG: Record<

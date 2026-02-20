@@ -110,8 +110,8 @@ export function CreateDuelDialog({ open, onClose, challenges }: CreateDuelDialog
         {success ? (
           /* ── Success state ─────────────────────────── */
           <div className="flex flex-col items-center gap-3 px-6 py-10 text-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-500/15 ring-4 ring-green-500/20">
-              <CheckCircle2 className="w-8 h-8 text-green-500" />
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/15 ring-4 ring-emerald-500/20">
+              <CheckCircle2 className="w-8 h-8 text-emerald-500" />
             </div>
             <p className="font-semibold text-lg">Duel Created!</p>
             <p className="text-sm text-muted-foreground">

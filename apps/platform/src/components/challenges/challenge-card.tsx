@@ -33,7 +33,7 @@ export function ChallengeCard({ challenge }: ChallengeCardProps) {
         "group cursor-pointer transition-all duration-200",
         "hover:shadow-lg hover:-translate-y-1 hover:border-primary/30",
         challenge.user_solved
-          ? "border-green-500/40 bg-green-500/[0.02] shadow-green-500/5 shadow-sm"
+          ? "border-emerald-500/30 bg-emerald-500/[0.02] shadow-emerald-500/5 shadow-sm"
           : "hover:bg-accent/20"
       )}
       onClick={() => router.push(`/challenges/${challenge.slug}`)}
@@ -47,7 +47,7 @@ export function ChallengeCard({ challenge }: ChallengeCardProps) {
               {challenge.user_solved && (
                 <Badge
                   variant="outline"
-                  className="text-xs text-green-500 border-green-500/40 bg-green-500/8 gap-1 py-0"
+                  className="text-xs text-emerald-500 border-emerald-500/30 bg-emerald-500/10 gap-1 py-0"
                 >
                   <CheckCircle2 className="w-3 h-3" />
                   Solved
@@ -113,7 +113,7 @@ export function ChallengeCard({ challenge }: ChallengeCardProps) {
             className={cn(
               "flex items-center gap-1 text-xs font-medium transition-colors",
               challenge.user_solved
-                ? "text-green-500"
+                ? "text-emerald-500"
                 : "text-muted-foreground group-hover:text-primary"
             )}
           >

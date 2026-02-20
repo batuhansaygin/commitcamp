@@ -207,10 +207,26 @@ export async function updateProfile(
   _prevState: ActionResult,
   formData: FormData
 ): Promise<ActionResult> {
+  // Parse tech_stack from comma-separated hidden input
+  const techStackRaw = formData.get("tech_stack_serialized");
+  const techStack = techStackRaw
+    ? String(techStackRaw)
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean)
+    : [];
+
   const raw = {
     username: formData.get("username"),
     display_name: formData.get("display_name"),
     bio: formData.get("bio"),
+    location: formData.get("location"),
+    website: formData.get("website"),
+    github_username: formData.get("github_username"),
+    twitter_username: formData.get("twitter_username"),
+    avatar_url: formData.get("avatar_url"),
+    cover_url: formData.get("cover_url"),
+    tech_stack: techStack,
   };
 
   const parsed = updateProfileSchema.safeParse(raw);
@@ -238,6 +254,7 @@ export async function updateProfile(
   }
 
   revalidatePath("/settings");
+  revalidatePath("/profile");
   return { success: true };
 }
 

@@ -40,10 +40,10 @@ interface PageProps {
 }
 
 const DIFFICULTIES: { value: ChallengeDifficulty | "all"; label: string; color: string }[] = [
-  { value: "all", label: "All", color: "" },
-  { value: "easy", label: "Easy", color: "text-green-500" },
+  { value: "all",    label: "All",    color: "" },
+  { value: "easy",   label: "Easy",   color: "text-emerald-500" },
   { value: "medium", label: "Medium", color: "text-amber-500" },
-  { value: "hard", label: "Hard", color: "text-red-500" },
+  { value: "hard",   label: "Hard",   color: "text-red-500" },
   { value: "expert", label: "Expert", color: "text-purple-500" },
 ];
 
@@ -182,7 +182,7 @@ export default async function ChallengesPage({ searchParams }: PageProps) {
             </div>
             <div>
               <p className="text-2xl font-bold">
-                <span className="text-green-500">{stats?.duel_wins ?? 0}</span>
+                <span className="text-emerald-500">{stats?.duel_wins ?? 0}</span>
                 <span className="text-muted-foreground/60 text-base font-normal mx-1">/</span>
                 <span className="text-red-500">{stats?.duel_losses ?? 0}</span>
               </p>
@@ -224,8 +224,8 @@ export default async function ChallengesPage({ searchParams }: PageProps) {
             <div className="flex items-center gap-2">
               <Trophy className="w-5 h-5 text-amber-500" />
               <h2 className="text-base font-semibold">Active Contests</h2>
-              <Badge className="bg-green-500/12 text-green-500 border-green-500/30 text-xs gap-1 animate-pulse">
-                <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block" />
+              <Badge className="bg-emerald-500/15 text-emerald-500 border-emerald-500/30 text-xs gap-1 animate-pulse">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
                 Live
               </Badge>
             </div>

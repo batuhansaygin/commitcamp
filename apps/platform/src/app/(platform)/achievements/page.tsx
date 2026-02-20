@@ -1,4 +1,4 @@
-﻿import { getTranslations, setRequestLocale } from "@/lib/i18n-server";
+import { getTranslations, setRequestLocale } from "@/lib/i18n-server";
 import { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -58,74 +58,68 @@ export default async function AchievementsPage({ params }: PageProps) {
       {/* ── Stats cards ─────────────────────────────────────── */}
       <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
         {/* Total unlocked */}
-        <Card className="border-border/60">
-          <CardContent className="pt-4 pb-4 px-4">
-            <div className="flex items-center gap-2 mb-1">
-              <Award className="h-4 w-4 text-primary" />
-              <span className="text-xs font-medium text-muted-foreground">
-                {t("stats.unlocked")}
-              </span>
+        <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/15 ring-1 ring-primary/20">
+              <Award className="h-5 w-5 text-primary" />
             </div>
-            <p className="text-2xl font-bold tabular-nums">
-              {stats.total_unlocked}
-              <span className="text-sm font-normal text-muted-foreground">
-                /{stats.total_available}
-              </span>
-            </p>
+            <div>
+              <p className="text-2xl font-bold tabular-nums">
+                {stats.total_unlocked}
+                <span className="text-sm font-normal text-muted-foreground">
+                  /{stats.total_available}
+                </span>
+              </p>
+              <p className="text-xs text-muted-foreground">{t("stats.unlocked")}</p>
+            </div>
           </CardContent>
         </Card>
 
         {/* Streak */}
-        <Card className="border-border/60">
-          <CardContent className="pt-4 pb-4 px-4">
-            <div className="flex items-center gap-2 mb-1">
-              <Flame className="h-4 w-4 text-orange-500" />
-              <span className="text-xs font-medium text-muted-foreground">
-                {t("stats.streak")}
-              </span>
+        <Card className="border-orange-500/20 bg-gradient-to-br from-orange-500/5 to-transparent">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-500/15 ring-1 ring-orange-500/20">
+              <Flame className="h-5 w-5 text-orange-500" />
             </div>
-            <p className="text-2xl font-bold tabular-nums text-orange-600 dark:text-orange-400">
-              {stats.current_streak}
-            </p>
+            <div>
+              <p className="text-2xl font-bold tabular-nums text-orange-500">
+                {stats.current_streak}
+              </p>
+              <p className="text-xs text-muted-foreground">{t("stats.streak")}</p>
+            </div>
           </CardContent>
         </Card>
 
         {/* Rarest badge */}
-        <Card className="border-border/60">
-          <CardContent className="pt-4 pb-4 px-4">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-base leading-none">✨</span>
-              <span className="text-xs font-medium text-muted-foreground">
-                {t("stats.rarest")}
-              </span>
+        <Card className="border-amber-500/20 bg-gradient-to-br from-amber-500/5 to-transparent">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/15 ring-1 ring-amber-500/20 text-xl">
+              {stats.rarest_unlocked ? stats.rarest_unlocked.icon : "✨"}
             </div>
-            {stats.rarest_unlocked ? (
-              <div className="flex items-center gap-1.5 mt-1">
-                <span className="text-xl">{stats.rarest_unlocked.icon}</span>
+            <div>
+              {stats.rarest_unlocked ? (
                 <RarityBadge rarity={stats.rarest_unlocked.rarity} />
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground mt-1">—</p>
-            )}
+              ) : (
+                <p className="text-sm font-medium text-muted-foreground">—</p>
+              )}
+              <p className="text-xs text-muted-foreground mt-1">{t("stats.rarest")}</p>
+            </div>
           </CardContent>
         </Card>
 
         {/* Completion */}
-        <Card className="border-border/60">
-          <CardContent className="pt-4 pb-4 px-4">
-            <div className="flex items-center gap-2 mb-1">
-              <Target className="h-4 w-4 text-green-500" />
-              <span className="text-xs font-medium text-muted-foreground">
-                {t("stats.completion")}
-              </span>
+        <Card className="border-emerald-500/20 bg-gradient-to-br from-emerald-500/5 to-transparent">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 ring-1 ring-emerald-500/20">
+              <Target className="h-5 w-5 text-emerald-500" />
             </div>
-            <p className="text-2xl font-bold tabular-nums text-green-600 dark:text-green-400">
-              {stats.completion_percent}%
-            </p>
-            <Progress
-              value={stats.completion_percent}
-              className="h-1 mt-2"
-            />
+            <div>
+              <p className="text-2xl font-bold tabular-nums text-emerald-500">
+                {stats.completion_percent}%
+              </p>
+              <p className="text-xs text-muted-foreground">{t("stats.completion")}</p>
+              <Progress value={stats.completion_percent} className="h-1 mt-1.5 w-20" />
+            </div>
           </CardContent>
         </Card>
       </div>

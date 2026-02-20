@@ -30,6 +30,12 @@ export interface Profile {
     follows: boolean;
     level_up: boolean;
   };
+  email_notification_preferences: {
+    likes: boolean;
+    comments: boolean;
+    follows: boolean;
+    level_up: boolean;
+  };
   created_at: string;
   updated_at: string;
 }

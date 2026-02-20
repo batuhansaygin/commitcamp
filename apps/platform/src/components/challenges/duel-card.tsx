@@ -159,7 +159,7 @@ export function DuelCard({ duel, currentUserId, onAccept, onDecline }: DuelCardP
               <span
                 className={cn(
                   "flex items-center gap-1 text-xs font-semibold",
-                  isWinner ? "text-green-500" : "text-red-400"
+                  isWinner ? "text-emerald-500" : "text-red-400"
                 )}
               >
                 {isWinner ? (

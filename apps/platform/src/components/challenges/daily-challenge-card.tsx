@@ -48,7 +48,7 @@ export function DailyChallengeCard({ challenge, userSolved, streak }: DailyChall
 
           <div className="flex flex-col items-end gap-2 shrink-0">
             {userSolved ? (
-              <Badge className="bg-green-500/15 text-green-500 border-green-500/40 gap-1.5">
+              <Badge className="bg-emerald-500/15 text-emerald-500 border-emerald-500/30 gap-1.5">
                 <CheckCircle2 className="w-3.5 h-3.5" />
                 Solved
               </Badge>

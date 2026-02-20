@@ -365,3 +365,25 @@ export async function changePassword(
     return { error: "Not authenticated" };
   }
 }
+
+/**
+ * Initiate an email address change. Supabase sends a confirmation email to the
+ * NEW address; the change is applied after the user clicks the link.
+ */
+export async function changeEmail(newEmail: string): Promise<ActionResult> {
+  try {
+    const { supabase } = await getAuthenticatedUser();
+
+    const { error } = await supabase.auth.updateUser(
+      { email: newEmail },
+      {
+        emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/callback?next=/settings`,
+      }
+    );
+
+    if (error) return { error: error.message };
+    return { success: true };
+  } catch {
+    return { error: "Not authenticated" };
+  }
+}

@@ -10,9 +10,9 @@ interface AchievementCardProps {
 }
 
 const PROGRESS_COLOR: Record<string, string> = {
-  common:    "bg-muted-foreground/50",
-  uncommon:  "bg-green-500",
-  rare:      "bg-blue-500",
+  common:    "bg-slate-400",
+  uncommon:  "bg-emerald-500",
+  rare:      "bg-sky-500",
   epic:      "bg-purple-500",
   legendary: "bg-amber-500",
 };
