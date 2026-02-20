@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { signupSchema } from "@/lib/validations/auth";
@@ -8,16 +8,49 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { OAuthButtons } from "./oauth-buttons";
 import { Link } from "@/i18n/navigation";
-import { Loader2, Mail, Lock, User } from "lucide-react";
+import { Loader2, Mail, Lock, User, Eye, EyeOff, Wand2 } from "lucide-react";
+
+const DEV_FIRST_NAMES = [
+  "Ada", "Alan", "Linus", "Grace", "Dennis", "Margaret", "Tim", "Katherine",
+  "Edsger", "Barbara", "Donald", "Hedy", "Brian", "Bjarne", "James", "Guido",
+  "Brendan", "Ryan", "Yukihiro", "Anders", "John", "Ken", "Rob", "Jeff",
+];
+
+const DEV_LAST_NAMES = [
+  "Lovelace", "Turing", "Torvalds", "Hopper", "Ritchie", "Hamilton",
+  "Berners-Lee", "Johnson", "Dijkstra", "Liskov", "Knuth", "Lamarr",
+  "Kernighan", "Stroustrup", "Gosling", "van Rossum", "Eich", "Dahl",
+  "Matsumoto", "Hejlsberg", "McCarthy", "Thompson", "Pike", "Dean",
+];
+
+function randomDevName() {
+  const first = DEV_FIRST_NAMES[Math.floor(Math.random() * DEV_FIRST_NAMES.length)];
+  const last = DEV_LAST_NAMES[Math.floor(Math.random() * DEV_LAST_NAMES.length)];
+  return `${first} ${last}`;
+}
+
+const CHARSET = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
+
+function generatePassword(length = 16) {
+  let pwd = "";
+  for (let i = 0; i < length; i++) {
+    pwd += CHARSET[Math.floor(Math.random() * CHARSET.length)];
+  }
+  return pwd;
+}
 
 export function SignupForm() {
   const router = useRouter();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+
+  // Generate once per mount (changes on every page refresh)
+  const namePlaceholder = useMemo(() => randomDevName(), []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -101,7 +134,7 @@ export function SignupForm() {
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 className="w-full rounded-lg border border-border bg-input py-2 pl-10 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                placeholder="Batuhan Developer"
+                placeholder={namePlaceholder}
                 required
               />
             </div>
@@ -121,18 +154,44 @@ export function SignupForm() {
             </div>
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-muted-foreground">Password</label>
+            <div className="mb-1 flex items-center justify-between">
+              <label className="text-xs font-medium text-muted-foreground">Password</label>
+              <button
+                type="button"
+                onClick={() => {
+                  setPassword(generatePassword());
+                  setShowPassword(true);
+                }}
+                className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+              >
+                <Wand2 className="h-3 w-3" />
+                Generate
+              </button>
+            </div>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-lg border border-border bg-input py-2 pl-10 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                className="w-full rounded-lg border border-border bg-input py-2 pl-10 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 placeholder="••••••••"
                 required
                 minLength={8}
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                tabIndex={-1}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+              </button>
             </div>
           </div>
 
