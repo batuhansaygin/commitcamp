@@ -28,33 +28,53 @@ export function ResetPasswordForm() {
 
   useEffect(() => {
     const supabase = createClient();
+    let resolved = false;
 
-    // Exchange code from URL for a session (PKCE flow)
-    const params = new URLSearchParams(window.location.search);
-    const code = params.get("code");
+    const resolve = (ok: boolean) => {
+      if (resolved) return;
+      resolved = true;
+      if (ok) {
+        setSessionReady(true);
+        window.history.replaceState({}, "", "/reset-password");
+      } else {
+        setSessionError(true);
+      }
+    };
 
-    if (code) {
-      supabase.auth
-        .exchangeCodeForSession(code)
-        .then(({ error }) => {
-          if (error) {
-            setSessionError(true);
-          } else {
-            setSessionReady(true);
-            // Clean the code from the URL without triggering a navigation
-            window.history.replaceState({}, "", "/reset-password");
-          }
-        });
-    } else {
-      // Maybe user already has a session (navigated back)
-      supabase.auth.getSession().then(({ data }) => {
-        if (data.session) {
-          setSessionReady(true);
-        } else {
-          setSessionError(true);
+    // Listen for PASSWORD_RECOVERY event (handles hash-based implicit flow)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event) => {
+        if (event === "PASSWORD_RECOVERY") {
+          resolve(true);
         }
-      });
-    }
+      }
+    );
+
+    const init = async () => {
+      // PKCE flow: URL has ?code=...
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get("code");
+
+      if (code) {
+        const { error } = await supabase.auth.exchangeCodeForSession(code);
+        resolve(!error);
+        return;
+      }
+
+      // Check if there's already a valid session (user navigated back)
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        resolve(true);
+        return;
+      }
+
+      // Wait for onAuthStateChange to handle hash-based tokens (up to 4s)
+      setTimeout(() => resolve(false), 4000);
+    };
+
+    init();
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
