@@ -99,6 +99,11 @@
       "milliseconds": "Milliseconds",
       "now": "Now"
     },
+    "saveHistory": "Save history",
+    "saveHistoryHint": "When on, your tool usage is saved so you can revisit it later.",
+    "recentUsage": "Recent usage",
+    "noHistory": "No history yet. Use tools to see them here.",
+    "loginToSave": "Sign in to save your tool history",
     "loremGenerator": {
       "title": "Lorem Ipsum Generator",
       "description": "Generate placeholder text in paragraphs, sentences or words",
@@ -392,10 +397,34 @@
     "comments": "Comments",
     "noComments": "No comments yet. Be the first to reply!",
     "addComment": "Post Comment",
+    "editComment": "Edit",
+    "deleteComment": "Delete",
+    "edited": "edited",
+    "saveComment": "Save",
+    "cancelEdit": "Cancel",
+    "reply": "Reply",
+    "replyPlaceholder": "Write a reply...",
+    "postReply": "Post Reply",
     "commentPlaceholder": "Write a comment...",
     "loginToComment": "Sign in to leave a comment.",
     "notFound": "Post not found",
     "notFoundDesc": "This post may have been deleted or doesn't exist."
+  },
+  "reports": {
+    "button": "Report",
+    "title": "Report content",
+    "description": "Help us moderate content by sharing why this should be reviewed.",
+    "reason": "Reason",
+    "details": "Details (optional)",
+    "detailsPlaceholder": "Add context for moderators...",
+    "submit": "Submit report",
+    "success": "Report submitted. Thank you.",
+    "loading": "Submitting..."
+  },
+  "reactions": {
+    "likedBy": "Liked by",
+    "loading": "Loading reactions...",
+    "empty": "No reactions yet."
   },
   "snippets": {
     "title": "Code Snippets",

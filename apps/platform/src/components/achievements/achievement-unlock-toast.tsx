@@ -19,6 +19,12 @@ interface AchievementUnlockToastProps {
   userId: string | null;
 }
 
+interface UserAchievementInsertPayload {
+  new: {
+    achievement_id: string;
+  };
+}
+
 const TOAST_DURATION = 5000; // ms
 
 export function AchievementUnlockToast({ userId }: AchievementUnlockToastProps) {
@@ -64,9 +70,8 @@ export function AchievementUnlockToast({ userId }: AchievementUnlockToastProps) 
           table: "user_achievements",
           filter: `user_id=eq.${userId}`,
         },
-        async (payload) => {
-          const achievementId = (payload.new as { achievement_id: string })
-            .achievement_id;
+        async (payload: UserAchievementInsertPayload) => {
+          const achievementId = payload.new.achievement_id;
           // Fetch achievement details
           const { data } = await supabase
             .from("achievements")

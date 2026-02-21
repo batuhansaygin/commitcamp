@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { createClient } from "@/lib/supabase/client";
+import type { AuthChangeEvent } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -43,7 +44,7 @@ export function ResetPasswordForm() {
 
     // Listen for PASSWORD_RECOVERY event (handles hash-based implicit flow)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event) => {
+      (event: AuthChangeEvent) => {
         if (event === "PASSWORD_RECOVERY") {
           resolve(true);
         }

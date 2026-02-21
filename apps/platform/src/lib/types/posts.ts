@@ -34,6 +34,7 @@ export interface Comment {
   parent_id: string | null;
   content: string;
   created_at: string;
+  updated_at: string;
 }
 
 /** Comment joined with the author's profile data. */

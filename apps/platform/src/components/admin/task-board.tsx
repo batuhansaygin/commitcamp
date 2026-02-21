@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useCallback, useTransition, useMemo } from "react";
+import { useState, useCallback, useTransition, useMemo, useEffect, useRef } from "react";
+import { createClient } from "@/lib/supabase/client";
 import {
   DndContext,
   DragOverlay,
@@ -274,6 +275,76 @@ export function TaskBoard({ initialTasks, initialProjects, adminUsers, currentUs
     setProjects((prev) => prev.filter((p) => p.id !== projectId));
     if (selectedProjectId === projectId) setSelectedProjectId(undefined);
   };
+
+  // Supabase Realtime — sync task board changes made by other admins in real-time
+  const currentUserIdRef = useRef(currentUserId);
+  useEffect(() => {
+    currentUserIdRef.current = currentUserId;
+  }, [currentUserId]);
+
+  useEffect(() => {
+    const supabase = createClient();
+
+    const channel = supabase
+      .channel("admin-tasks-realtime")
+      .on(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        "postgres_changes" as any,
+        { event: "INSERT", schema: "public", table: "admin_tasks" },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (payload: any) => {
+          const newTask = payload.new as AdminTask;
+          // Skip own inserts — already handled by handleTaskCreated optimistically
+          if (newTask.created_by === currentUserIdRef.current) return;
+          setTasks((prev) => {
+            const status = newTask.status as TaskStatus;
+            if (prev[status]?.some((t) => t.id === newTask.id)) return prev;
+            return { ...prev, [status]: [...(prev[status] ?? []), newTask] };
+          });
+        }
+      )
+      .on(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        "postgres_changes" as any,
+        { event: "UPDATE", schema: "public", table: "admin_tasks" },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (payload: any) => {
+          const updated = payload.new as AdminTask;
+          setTasks((prev) => {
+            const next = { ...prev };
+            // Remove from all columns first
+            for (const s of Object.keys(next) as TaskStatus[]) {
+              next[s] = next[s].filter((t) => t.id !== updated.id);
+            }
+            // Place in the correct column
+            const status = updated.status as TaskStatus;
+            next[status] = [...(next[status] ?? []), updated];
+            return next;
+          });
+        }
+      )
+      .on(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        "postgres_changes" as any,
+        { event: "DELETE", schema: "public", table: "admin_tasks" },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (payload: any) => {
+          const deletedId = (payload.old as { id: string }).id;
+          setTasks((prev) => {
+            const next = { ...prev };
+            for (const s of Object.keys(next) as TaskStatus[]) {
+              next[s] = next[s].filter((t) => t.id !== deletedId);
+            }
+            return next;
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   return (
     <div className="flex h-full min-h-0 overflow-hidden">

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Heart, MessageCircle, Bookmark, Share2, Check } from "lucide-react";
 import { useCardActions } from "@/hooks/use-card-actions";
 import { cn } from "@/lib/utils";
+import { ReactionUsersDialog } from "@/components/reactions/reaction-users-dialog";
 
 interface SnippetCardActionsProps {
   snippetId: string;
@@ -53,8 +54,8 @@ export function SnippetCardActions({ snippetId }: SnippetCardActionsProps) {
             isLiked && "fill-current scale-110"
           )}
         />
-        {likeCount > 0 && <span>{likeCount}</span>}
       </button>
+      <ReactionUsersDialog targetType="snippet" targetId={snippetId} count={likeCount} />
 
       {/* Comment — navigates to snippet detail */}
       <a

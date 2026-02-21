@@ -1,6 +1,6 @@
-﻿"use client";
+"use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useTranslations } from "@/lib/i18n";
 import { Link } from "@/i18n/navigation";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,6 +16,7 @@ import {
   HelpCircle,
 } from "lucide-react";
 import { getProfilePosts, getProfileSnippets } from "@/lib/actions/profile";
+import { createClient } from "@/lib/supabase/client";
 
 type TabKey = "all" | "discussion" | "question" | "showcase" | "snippets";
 
@@ -39,6 +40,7 @@ interface SnippetItem {
 
 interface ProfilePostsTabsProps {
   username: string;
+  userId: string;
   isOwnProfile: boolean;
   initialPosts?: PostItem[];
 }
@@ -71,6 +73,7 @@ function timeAgo(dateStr: string): string {
 
 export function ProfilePostsTabs({
   username,
+  userId,
   isOwnProfile,
   initialPosts = [],
 }: ProfilePostsTabsProps) {
@@ -80,6 +83,64 @@ export function ProfilePostsTabs({
   const [snippets, setSnippets] = useState<SnippetItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [snippetsLoaded, setSnippetsLoaded] = useState(false);
+  const channelRef = useRef<ReturnType<ReturnType<typeof createClient>["channel"]> | null>(null);
+
+  // Realtime: reflect new posts/snippets and deletions without page refresh
+  useEffect(() => {
+    const supabase = createClient();
+    if (channelRef.current) supabase.removeChannel(channelRef.current);
+
+    channelRef.current = supabase
+      .channel(`profile-posts:${userId}`)
+      .on(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        "postgres_changes" as any,
+        { event: "INSERT", schema: "public", table: "posts", filter: `user_id=eq.${userId}` },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (payload: any) => {
+          const newPost = payload.new as PostItem;
+          setPosts((prev) => prev.some((p) => p.id === newPost.id) ? prev : [newPost, ...prev]);
+        }
+      )
+      .on(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        "postgres_changes" as any,
+        { event: "DELETE", schema: "public", table: "posts", filter: `user_id=eq.${userId}` },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (payload: any) => {
+          const deletedId = (payload.old as { id: string }).id;
+          setPosts((prev) => prev.filter((p) => p.id !== deletedId));
+        }
+      )
+      .on(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        "postgres_changes" as any,
+        { event: "INSERT", schema: "public", table: "snippets", filter: `user_id=eq.${userId}` },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (payload: any) => {
+          const newSnippet = payload.new as SnippetItem;
+          setSnippets((prev) => prev.some((s) => s.id === newSnippet.id) ? prev : [newSnippet, ...prev]);
+        }
+      )
+      .on(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        "postgres_changes" as any,
+        { event: "DELETE", schema: "public", table: "snippets", filter: `user_id=eq.${userId}` },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (payload: any) => {
+          const deletedId = (payload.old as { id: string }).id;
+          setSnippets((prev) => prev.filter((s) => s.id !== deletedId));
+        }
+      )
+      .subscribe();
+
+    return () => {
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+    };
+  }, [userId]);
 
   const tabs: { key: TabKey; label: string }[] = [
     { key: "all", label: t("tabs.all") },

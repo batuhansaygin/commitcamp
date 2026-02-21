@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Header } from "@/components/layout/header";
 import { ToolsSidebar } from "@/components/layout/tools-sidebar";
+import { ToolHistoryTracker } from "@/components/tools/tool-history-tracker";
 
 interface ToolsLayoutProps {
   children: React.ReactNode;
@@ -13,6 +14,7 @@ export default function ToolsLayout({ children }: ToolsLayoutProps) {
 
   return (
     <div className="flex min-h-screen flex-col">
+      <ToolHistoryTracker />
       <Header
         showMenuButton
         onToggleSidebar={() => setSidebarOpen(true)}

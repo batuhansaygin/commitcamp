@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
 import { Plus, MessageSquareText } from "lucide-react";
 import { getPosts } from "@/lib/actions/posts";
-import { PostCard } from "@/components/forum/post-card";
+import { ForumPostsList } from "@/components/forum/forum-posts-list";
 import { ForumTabs } from "@/components/forum/forum-tabs";
 import { ForumViewSwitcher } from "@/components/forum/forum-view-switcher";
 import { ForumLiveUpdater } from "@/components/forum/forum-live-updater";
@@ -61,24 +61,13 @@ export default async function ForumPage({ params, searchParams }: PageProps) {
       {/* Real-time banner: new posts notification */}
       <ForumLiveUpdater typeFilter={validType} />
 
-      {/* Posts list */}
+      {/* Posts list — client component handles real-time DELETE filtering */}
       {posts.length > 0 ? (
-        <div
-          className={
-            currentView === "flow"
-              ? "flex flex-col gap-2"
-              : "grid gap-4 sm:grid-cols-2"
-          }
-        >
-          {posts.map((post) => (
-            <PostCard
-              key={post.id}
-              snippet={post}
-              variant={currentView}
-              readMoreLabel={t("readMore")}
-            />
-          ))}
-        </div>
+        <ForumPostsList
+          initialPosts={posts}
+          variant={currentView}
+          readMoreLabel={t("readMore")}
+        />
       ) : (
         <Card>
           <CardContent className="flex flex-col items-center justify-center gap-3 py-16 text-center">

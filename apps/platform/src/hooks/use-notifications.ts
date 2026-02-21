@@ -19,6 +19,10 @@ interface UseNotificationsReturn {
   refresh: () => Promise<void>;
 }
 
+interface NotificationInsertPayload {
+  new: Notification;
+}
+
 export function useNotifications(
   userId: string | null,
   initialNotifications?: Notification[]
@@ -32,24 +36,40 @@ export function useNotifications(
 
   const refresh = useCallback(async () => {
     if (!userId) return;
-    const [{ data }, count] = await Promise.all([
-      getNotifications(userId),
-      getUnreadNotificationCount(),
-    ]);
-    setNotifications(data);
-    setUnreadCount(count);
+    try {
+      const [{ data }, count] = await Promise.all([
+        getNotifications(userId),
+        getUnreadNotificationCount(),
+      ]);
+      setNotifications(data);
+      setUnreadCount(count);
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") return;
+      throw err;
+    }
   }, [userId]);
 
   // Initial load
   useEffect(() => {
     if (!userId) return;
+    let isMounted = true;
 
     if (!initialNotifications) {
       setIsLoading(true);
-      refresh().finally(() => setIsLoading(false));
+      refresh()
+        .catch((err) => {
+          if (!(err instanceof Error && err.name === "AbortError")) {
+            console.error("[useNotifications] refresh error:", err);
+          }
+        })
+        .finally(() => { if (isMounted) setIsLoading(false); });
     } else {
-      getUnreadNotificationCount().then(setUnreadCount);
+      getUnreadNotificationCount()
+        .then((count) => { if (isMounted) setUnreadCount(count); })
+        .catch(() => {});
     }
+
+    return () => { isMounted = false; };
   }, [userId, initialNotifications, refresh]);
 
   // Realtime subscription
@@ -67,8 +87,8 @@ export function useNotifications(
           table: "notifications",
           filter: `user_id=eq.${userId}`,
         },
-        (payload) => {
-          const incoming = payload.new as Notification;
+        (payload: NotificationInsertPayload) => {
+          const incoming = payload.new;
           setNotifications((prev) => [incoming, ...prev]);
           setUnreadCount((c) => c + 1);
         }
@@ -82,8 +102,8 @@ export function useNotifications(
           filter: `user_id=eq.${userId}`,
         },
         () => {
-          // Re-fetch on any update to keep state in sync
-          refresh();
+          // Re-fetch on any update to keep state in sync; fire-and-forget
+          refresh().catch(() => {});
         }
       )
       .subscribe();

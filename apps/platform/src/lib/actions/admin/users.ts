@@ -104,7 +104,7 @@ export async function listUsers(
 export async function updateUserRole(
   targetUserId: string,
   newRole: UserRole
-): Promise<void> {
+): Promise<{ role: UserRole }> {
   const { user, role: callerRole } = await requireAdmin();
 
   // Only system_admin can promote to admin/system_admin
@@ -139,7 +139,7 @@ export async function updateUserRole(
     to: newRole,
   });
 
-  revalidatePath("/admin/users");
+  return { role: newRole };
 }
 
 // ── Ban / Unban ───────────────────────────────────────────────────────────────
@@ -148,7 +148,7 @@ export async function banUser(
   targetUserId: string,
   reason: string,
   bannedUntil?: string
-): Promise<void> {
+): Promise<{ is_banned: true; ban_reason: string; banned_until: string | null }> {
   const { user } = await requireAdmin();
   const admin = createAdminClient();
 
@@ -179,10 +179,10 @@ export async function banUser(
     bannedUntil: bannedUntil ?? null,
   });
 
-  revalidatePath("/admin/users");
+  return { is_banned: true, ban_reason: reason, banned_until: bannedUntil ?? null };
 }
 
-export async function unbanUser(targetUserId: string): Promise<void> {
+export async function unbanUser(targetUserId: string): Promise<{ is_banned: false }> {
   await requireAdmin();
   const admin = createAdminClient();
 
@@ -207,7 +207,7 @@ export async function unbanUser(targetUserId: string): Promise<void> {
     username: target?.username,
   });
 
-  revalidatePath("/admin/users");
+  return { is_banned: false };
 }
 
 // ── Verify / Unverify ─────────────────────────────────────────────────────────
@@ -215,7 +215,7 @@ export async function unbanUser(targetUserId: string): Promise<void> {
 export async function setUserVerified(
   targetUserId: string,
   verified: boolean
-): Promise<void> {
+): Promise<{ is_verified: boolean }> {
   await requireAdmin();
   const admin = createAdminClient();
 
@@ -226,12 +226,12 @@ export async function setUserVerified(
   if (error) throw new Error(error.message);
 
   await logAdminAction(verified ? "verify_user" : "unverify_user", "user", targetUserId);
-  revalidatePath("/admin/users");
+  return { is_verified: verified };
 }
 
 // ── Delete user ───────────────────────────────────────────────────────────────
 
-export async function deleteUser(targetUserId: string): Promise<void> {
+export async function deleteUser(targetUserId: string): Promise<{ deleted: true }> {
   await requireSystemAdmin();
   const admin = createAdminClient();
 
@@ -251,5 +251,5 @@ export async function deleteUser(targetUserId: string): Promise<void> {
     username: target?.username,
   });
 
-  revalidatePath("/admin/users");
+  return { deleted: true };
 }

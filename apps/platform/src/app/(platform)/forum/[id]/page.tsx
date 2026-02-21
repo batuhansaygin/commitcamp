@@ -3,12 +3,13 @@ import { notFound } from "next/navigation";
 import { Link } from "@/i18n/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { PostActions } from "@/components/forum/post-actions";
+import { PostSolvedWrapper } from "@/components/forum/post-solved-wrapper";
 import { CommentSection } from "@/components/forum/comment-section";
+import { PostCardActions } from "@/components/forum/post-card-actions";
 import { getPostById } from "@/lib/actions/posts";
 import { getComments } from "@/lib/actions/comments";
 import { createClient } from "@/lib/supabase/server";
-import { User, Calendar, CheckCircle2 } from "lucide-react";
+import { User, Calendar } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -48,6 +49,17 @@ export default async function PostDetailPage({ params }: PageProps) {
   const isAuthor = user?.id === post.user_id;
   const isAuthenticated = !!user;
 
+  // Fetch current user profile for optimistic comment display
+  let currentUserProfile: { id: string; username: string; display_name: string | null; avatar_url: string | null; level: number } | null = null;
+  if (user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("username, display_name, avatar_url, level")
+      .eq("id", user.id)
+      .single();
+    if (profile) currentUserProfile = { id: user.id, ...profile };
+  }
+
   const authorName =
     post.profiles?.display_name || post.profiles?.username || "Anonymous";
 
@@ -68,12 +80,14 @@ export default async function PostDetailPage({ params }: PageProps) {
           >
             {t(`types.${post.type}`)}
           </Badge>
-          {post.type === "question" && post.is_solved && (
-            <Badge variant="success" className="text-[10px]">
-              <CheckCircle2 className="mr-1 h-3 w-3" />
-              {t("solved")}
-            </Badge>
-          )}
+          {/* Solved badge is rendered by PostSolvedWrapper (client) so it updates without refresh */}
+          <PostSolvedWrapper
+            postId={post.id}
+            isQuestion={post.type === "question"}
+            initialIsSolved={post.is_solved}
+            isAuthor={isAuthor}
+            isAuthenticated={isAuthenticated}
+          />
         </div>
 
         <h1 className="text-2xl font-bold leading-tight">{post.title}</h1>
@@ -129,14 +143,10 @@ export default async function PostDetailPage({ params }: PageProps) {
         </CardContent>
       </Card>
 
-      {/* Author actions */}
-      {isAuthor && (
-        <PostActions
-          postId={post.id}
-          isQuestion={post.type === "question"}
-          isSolved={post.is_solved}
-        />
-      )}
+      {/* Author actions are rendered inside PostSolvedWrapper above (client component) */}
+
+      {/* Like / Bookmark / Share */}
+      <PostCardActions postId={post.id} />
 
       {/* Comments */}
       <CommentSection
@@ -144,6 +154,7 @@ export default async function PostDetailPage({ params }: PageProps) {
         targetId={post.id}
         comments={comments}
         isAuthenticated={isAuthenticated}
+        currentUser={currentUserProfile}
       />
     </div>
   );
