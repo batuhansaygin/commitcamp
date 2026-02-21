@@ -1,17 +1,9 @@
 "use client";
 
-/**
- * useCardActions — real-time reactions + bookmarks for any post/snippet card.
- *
- * Implements the three-layer update architecture (Rule 8):
- *   1. Optimistic  — own actions update instantly, revert on error
- *   2. Realtime    — other users' reactions update via Supabase subscription
- *   3. Revalidation— server action calls revalidatePath for SSR consistency
- */
-
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { toggleReaction } from "@/lib/actions/reactions";
+import { toggleBookmark } from "@/lib/actions/bookmarks";
 
 export type CardTargetType = "post" | "snippet";
 
@@ -31,10 +23,16 @@ interface UseCardActionsReturn {
   handleBookmark: (e: React.MouseEvent) => void;
 }
 
+interface ReactionRealtimePayload {
+  eventType: "INSERT" | "DELETE" | "UPDATE";
+  new: { user_id?: string } | null;
+  old: { user_id?: string } | null;
+}
+
 export function useCardActions(
   targetId: string,
   targetType: CardTargetType,
-  revalidatePath: string
+  _revalidatePathStr: string
 ): UseCardActionsReturn {
   const [state, setState] = useState<ActionsState>({
     likeCount: 0,
@@ -45,47 +43,97 @@ export function useCardActions(
 
   const currentUserIdRef = useRef<string | null>(null);
   const channelRef = useRef<ReturnType<ReturnType<typeof createClient>["channel"]> | null>(null);
+  const likePendingRef = useRef(false);
+  const bookmarkPendingRef = useRef(false);
+  const mountedRef = useRef(true);
 
-  // ── Layer 1: Initial data fetch ────────────────────────────────────────────
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
+
+  const getCurrentUser = useCallback(async () => {
+    const supabase = createClient();
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user) return user;
+    } catch {
+      // fall through
+    }
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      return session?.user ?? null;
+    } catch {
+      return null;
+    }
+  }, []);
+
+  // Initial data fetch
   useEffect(() => {
     const supabase = createClient();
+    let cancelled = false;
 
     (async () => {
-      const [{ count }, { data: { user } }] = await Promise.all([
-        supabase
+      try {
+        const { count } = await supabase
           .from("reactions")
           .select("*", { count: "exact", head: true })
           .eq("target_type", targetType)
-          .eq("target_id", targetId),
-        supabase.auth.getUser(),
-      ]);
+          .eq("target_id", targetId);
 
-      if (user) {
-        currentUserIdRef.current = user.id;
-        const [{ data: reaction }, { data: bookmark }] = await Promise.all([
-          supabase
-            .from("reactions")
-            .select("user_id")
-            .eq("user_id", user.id)
-            .eq("target_type", targetType)
-            .eq("target_id", targetId)
-            .maybeSingle(),
-          supabase
-            .from("bookmarks")
-            .select("user_id")
-            .eq("user_id", user.id)
-            .eq("target_type", targetType)
-            .eq("target_id", targetId)
-            .maybeSingle(),
-        ]);
-        setState({ likeCount: count ?? 0, isLiked: !!reaction, isBookmarked: !!bookmark, isInitialized: true });
-      } else {
-        setState({ likeCount: count ?? 0, isLiked: false, isBookmarked: false, isInitialized: true });
+        const user = await getCurrentUser();
+
+        if (cancelled) return;
+
+        if (user) {
+          currentUserIdRef.current = user.id;
+          const [{ data: reaction }, { data: bookmark }] = await Promise.all([
+            supabase
+              .from("reactions")
+              .select("user_id")
+              .eq("user_id", user.id)
+              .eq("target_type", targetType)
+              .eq("target_id", targetId)
+              .maybeSingle(),
+            supabase
+              .from("bookmarks")
+              .select("user_id")
+              .eq("user_id", user.id)
+              .eq("target_type", targetType)
+              .eq("target_id", targetId)
+              .maybeSingle(),
+          ]);
+          if (cancelled) return;
+          setState({
+            likeCount: count ?? 0,
+            isLiked: !!reaction,
+            isBookmarked: !!bookmark,
+            isInitialized: true,
+          });
+        } else {
+          setState({
+            likeCount: count ?? 0,
+            isLiked: false,
+            isBookmarked: false,
+            isInitialized: true,
+          });
+        }
+      } catch {
+        if (!cancelled) {
+          setState((prev) => ({ ...prev, isInitialized: true }));
+        }
       }
     })();
-  }, [targetId, targetType]);
 
-  // ── Layer 2: Realtime — other users' reactions ─────────────────────────────
+    return () => { cancelled = true; };
+  }, [targetId, targetType, getCurrentUser]);
+
+  // Realtime — other users' reactions
   useEffect(() => {
     const supabase = createClient();
 
@@ -99,11 +147,9 @@ export function useCardActions(
           table: "reactions",
           filter: `target_id=eq.${targetId}`,
         },
-        (payload) => {
-          // Skip own actions — already handled optimistically
+        (payload: ReactionRealtimePayload) => {
           const changedUserId =
-            (payload.new as Record<string, string> | null)?.user_id ??
-            (payload.old as Record<string, string> | null)?.user_id;
+            payload.new?.user_id ?? payload.old?.user_id;
           if (changedUserId && changedUserId === currentUserIdRef.current) return;
 
           setState((prev) => ({
@@ -125,64 +171,73 @@ export function useCardActions(
     };
   }, [targetId, targetType]);
 
-  // ── Handler: Like / Unlike (optimistic) ───────────────────────────────────
-  const handleLike = (e: React.MouseEvent) => {
+  const handleLike = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
+    if (likePendingRef.current) return;
+    likePendingRef.current = true;
+
     const next = !state.isLiked;
-    // Optimistic update
     setState((prev) => ({
       ...prev,
       isLiked: next,
       likeCount: Math.max(0, next ? prev.likeCount + 1 : prev.likeCount - 1),
     }));
 
-    // Server action — revert on error
-    toggleReaction(targetType, targetId, "like", revalidatePath).catch(() => {
+    const revert = () => {
+      if (!mountedRef.current) return;
       setState((prev) => ({
         ...prev,
         isLiked: !next,
         likeCount: Math.max(0, !next ? prev.likeCount + 1 : prev.likeCount - 1),
       }));
-    });
-  };
+    };
 
-  // ── Handler: Bookmark / Unbookmark (optimistic) ────────────────────────────
-  const handleBookmark = (e: React.MouseEvent) => {
+    (async () => {
+      try {
+        const basePath = targetType === "post" ? "/forum" : "/snippets";
+        const result = await toggleReaction(
+          targetType,
+          targetId,
+          "like",
+          basePath
+        );
+        if (result.error) revert();
+      } catch {
+        revert();
+      } finally {
+        likePendingRef.current = false;
+      }
+    })();
+  }, [state.isLiked, targetType, targetId]);
+
+  const handleBookmark = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
+    if (bookmarkPendingRef.current) return;
+    bookmarkPendingRef.current = true;
+
     const next = !state.isBookmarked;
-    // Optimistic update
     setState((prev) => ({ ...prev, isBookmarked: next }));
 
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) {
-        setState((prev) => ({ ...prev, isBookmarked: !next }));
-        return;
+    const revert = () => {
+      if (mountedRef.current) setState((prev) => ({ ...prev, isBookmarked: !next }));
+    };
+
+    (async () => {
+      try {
+        const basePath = targetType === "post" ? "/forum" : "/snippets";
+        const result = await toggleBookmark(targetType, targetId, basePath);
+        if (result.error) revert();
+      } catch {
+        revert();
+      } finally {
+        bookmarkPendingRef.current = false;
       }
-      if (next) {
-        supabase
-          .from("bookmarks")
-          .insert({ user_id: user.id, target_type: targetType, target_id: targetId })
-          .then(({ error }) => {
-            if (error) setState((prev) => ({ ...prev, isBookmarked: !next }));
-          });
-      } else {
-        supabase
-          .from("bookmarks")
-          .delete()
-          .eq("user_id", user.id)
-          .eq("target_type", targetType)
-          .eq("target_id", targetId)
-          .then(({ error }) => {
-            if (error) setState((prev) => ({ ...prev, isBookmarked: !next }));
-          });
-      }
-    });
-  };
+    })();
+  }, [state.isBookmarked, targetType, targetId]);
 
   return {
     likeCount: state.likeCount,

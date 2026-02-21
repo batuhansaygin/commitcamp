@@ -17,6 +17,13 @@ type FeedItem =
   | { type: "post"; data: PostWithAuthor }
   | { type: "snippet"; data: SnippetWithAuthor };
 
+interface RealtimeInsertPayload {
+  new: {
+    id: string;
+    user_id: string;
+  };
+}
+
 function mergeByDate(
   posts: PostWithAuthor[],
   snippets: SnippetWithAuthor[]
@@ -127,8 +134,8 @@ export function FeedStream({
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "posts" },
-        (payload) => {
-          const row = payload.new as { id: string; user_id: string };
+        (payload: RealtimeInsertPayload) => {
+          const row = payload.new;
           addPost(row.id, row.user_id);
         }
       )
@@ -139,8 +146,8 @@ export function FeedStream({
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "snippets" },
-        (payload) => {
-          const row = payload.new as { id: string; user_id: string };
+        (payload: RealtimeInsertPayload) => {
+          const row = payload.new;
           addSnippet(row.id, row.user_id);
         }
       )

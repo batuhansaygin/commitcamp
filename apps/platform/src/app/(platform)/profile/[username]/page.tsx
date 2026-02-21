@@ -1,4 +1,4 @@
-﻿import { getTranslations, setRequestLocale } from "@/lib/i18n-server";
+import { getTranslations, setRequestLocale } from "@/lib/i18n-server";
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
@@ -314,6 +314,7 @@ export default async function ProfilePage({ params }: PageProps) {
       <div className="mt-6 px-5 pb-10 sm:px-6">
         <ProfilePostsTabs
           username={username}
+          userId={profile.id}
           isOwnProfile={isOwnProfile}
           initialPosts={
             (initialPosts ?? []) as Parameters<typeof ProfilePostsTabs>[0]["initialPosts"]

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
   updateUserRole,
   banUser,
@@ -56,7 +57,7 @@ interface Props {
 }
 
 export function AdminUsersTable({
-  users,
+  users: initialUsers,
   total,
   page,
   limit,
@@ -67,6 +68,9 @@ export function AdminUsersTable({
   const pathname = usePathname();
   const [isPending, startTransition] = useTransition();
   const [actionError, setActionError] = useState<string | null>(null);
+
+  // Local copy of users — mutations update this directly, no router.refresh()
+  const [users, setUsers] = useState<AdminUserRow[]>(initialUsers);
 
   // Ban dialog state
   const [banTarget, setBanTarget] = useState<AdminUserRow | null>(null);
@@ -87,11 +91,22 @@ export function AdminUsersTable({
     router.push(`${pathname}?${sp.toString()}`);
   }
 
-  function handleAction(fn: () => Promise<void>) {
+  /** Patch a single user row in local state by id */
+  function patchUser(id: string, patch: Partial<AdminUserRow>) {
+    setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, ...patch } : u)));
+  }
+
+  /** Remove a user row from local state by id */
+  function removeUser(id: string) {
+    setUsers((prev) => prev.filter((u) => u.id !== id));
+  }
+
+  function handleAction<T>(fn: () => Promise<T>, onSuccess?: (result: T) => void) {
     setActionError(null);
     startTransition(async () => {
       try {
-        await fn();
+        const result = await fn();
+        onSuccess?.(result);
       } catch (e) {
         setActionError(e instanceof Error ? e.message : "Action failed");
       }
@@ -184,11 +199,13 @@ export function AdminUsersTable({
                         <select
                           value={user.role}
                           disabled={isPending}
-                          onChange={(e) =>
-                            handleAction(() =>
-                              updateUserRole(user.id, e.target.value as UserRole)
-                            )
-                          }
+                          onChange={(e) => {
+                            const newRole = e.target.value as UserRole;
+                            handleAction(
+                              () => updateUserRole(user.id, newRole),
+                              () => patchUser(user.id, { role: newRole })
+                            );
+                          }}
                           className={`rounded px-2 py-0.5 text-xs font-medium border-0 focus:ring-0 cursor-pointer ${
                             ROLE_COLORS[user.role] ?? "bg-muted"
                           }`}
@@ -230,11 +247,13 @@ export function AdminUsersTable({
                           <button
                             title={user.is_verified ? "Remove verification" : "Verify user"}
                             disabled={isPending}
-                            onClick={() =>
-                              handleAction(() =>
-                                setUserVerified(user.id, !user.is_verified)
-                              )
-                            }
+                            onClick={() => {
+                              const next = !user.is_verified;
+                              handleAction(
+                                () => setUserVerified(user.id, next),
+                                () => patchUser(user.id, { is_verified: next })
+                              );
+                            }}
                             className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:opacity-50"
                           >
                             {user.is_verified ? (
@@ -250,7 +269,10 @@ export function AdminUsersTable({
                               title="Unban user"
                               disabled={isPending}
                               onClick={() =>
-                                handleAction(() => unbanUser(user.id))
+                                handleAction(
+                                  () => unbanUser(user.id),
+                                  () => patchUser(user.id, { is_banned: false, ban_reason: null, banned_until: null })
+                                )
                               }
                               className="rounded p-1.5 text-emerald-500 transition-colors hover:bg-emerald-500/10 disabled:opacity-50"
                             >
@@ -346,11 +368,14 @@ export function AdminUsersTable({
               disabled={!banReason.trim() || isPending}
               onClick={() => {
                 if (!banTarget) return;
-                handleAction(async () => {
-                  await banUser(banTarget.id, banReason.trim());
-                  setBanTarget(null);
-                  setBanReason("");
-                });
+                const id = banTarget.id;
+                const reason = banReason.trim();
+                handleAction(
+                  () => banUser(id, reason),
+                  (result) => patchUser(id, { is_banned: result.is_banned, ban_reason: result.ban_reason, banned_until: result.banned_until })
+                );
+                setBanTarget(null);
+                setBanReason("");
               }}
             >
               {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -378,10 +403,12 @@ export function AdminUsersTable({
               disabled={isPending}
               onClick={() => {
                 if (!deleteTarget) return;
-                handleAction(async () => {
-                  await deleteUser(deleteTarget.id);
-                  setDeleteTarget(null);
-                });
+                const id = deleteTarget.id;
+                handleAction(
+                  () => deleteUser(id),
+                  () => removeUser(id)
+                );
+                setDeleteTarget(null);
               }}
             >
               {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

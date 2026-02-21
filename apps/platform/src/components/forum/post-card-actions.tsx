@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Heart, MessageCircle, Bookmark, Share2, Check } from "lucide-react";
 import { useCardActions } from "@/hooks/use-card-actions";
 import { cn } from "@/lib/utils";
+import { ReactionUsersDialog } from "@/components/reactions/reaction-users-dialog";
 
 interface PostCardActionsProps {
   postId: string;
@@ -53,8 +54,8 @@ export function PostCardActions({ postId }: PostCardActionsProps) {
             isLiked && "fill-current scale-110"
           )}
         />
-        {likeCount > 0 && <span>{likeCount}</span>}
       </button>
+      <ReactionUsersDialog targetType="post" targetId={postId} count={likeCount} />
 
       {/* Comment — navigates to post detail */}
       <a

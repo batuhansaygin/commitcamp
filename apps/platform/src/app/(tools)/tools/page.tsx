@@ -1,6 +1,9 @@
-﻿import { setRequestLocale } from "@/lib/i18n-server";
+import { setRequestLocale } from "@/lib/i18n-server";
 import { Link } from "@/i18n/navigation";
+import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent } from "@/components/ui/card";
+import { ToolsSaveSwitch } from "@/components/tools/tools-save-switch";
+import { ToolsHistorySection } from "@/components/tools/tools-history-section";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,7 +31,7 @@ export const metadata: Metadata = {
 };
 
 interface PageProps {
-  params: Promise<{ locale: string }>;
+  params?: Promise<{ locale?: string }>;
 }
 
 interface Tool {
@@ -146,6 +149,11 @@ const CATEGORY_COLORS: Record<string, string> = {
 };
 
 export default async function ToolsPage({ params }: PageProps) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const isLoggedIn = !!user;
 
   return (
     <div className="mx-auto max-w-5xl w-full space-y-10">
@@ -292,6 +300,16 @@ export default async function ToolsPage({ params }: PageProps) {
             </Link>
           );
         })}
+      </div>
+
+      {/* ── Save history + Recent usage (when logged in) ──── */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <ToolsSaveSwitch />
+        </div>
+        <div>
+          <ToolsHistorySection isLoggedIn={isLoggedIn} />
+        </div>
       </div>
 
       {/* ── Bottom CTA banner ─────────────────────────────── */}

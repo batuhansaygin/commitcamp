@@ -51,7 +51,7 @@ export async function toggleReaction(
         .eq("target_id", targetId);
 
       if (error) return { error: error.message };
-      revalidatePath(revalidatePath_);
+      revalidatePath(revalidatePath_, "layout");
       return { added: false };
     }
 
@@ -65,18 +65,19 @@ export async function toggleReaction(
 
     if (error) return { error: error.message };
 
-    // Award XP and send notification to the content author (post or snippet only)
-    if (targetType === "post" || targetType === "snippet") {
-      const table = targetType === "post" ? "posts" : "snippets";
-      const { data: target } = await supabase
-        .from(table)
-        .select("user_id, title")
-        .eq("id", targetId)
-        .single();
-
-      if (target?.user_id && target.user_id !== user.id) {
+    // Fire-and-forget: XP, notification, achievements for content author.
+    // None of these must be able to revert a successfully inserted reaction.
+    void Promise.allSettled([
+      (async () => {
+        if (targetType !== "post" && targetType !== "snippet") return;
+        const table = targetType === "post" ? "posts" : "snippets";
+        const { data: target } = await supabase
+          .from(table)
+          .select("user_id, title")
+          .eq("id", targetId)
+          .single();
+        if (!target?.user_id || target.user_id === user.id) return;
         await awardXP(target.user_id, 5, "reaction_received");
-
         if (targetType === "post") {
           await createNotification({
             user_id: target.user_id,
@@ -86,13 +87,11 @@ export async function toggleReaction(
             message: "liked your post",
           });
         }
+        await checkAndAwardAchievements(target.user_id);
+      })(),
+    ]);
 
-        // Check likes_received achievements for the content author
-        void checkAndAwardAchievements(target.user_id);
-      }
-    }
-
-    revalidatePath(revalidatePath_);
+    revalidatePath(revalidatePath_, "layout");
     return { added: true };
   } catch {
     return { error: "An error occurred." };
@@ -132,4 +131,43 @@ export async function getReactionState(
     count: count ?? 0,
     userReaction: (userReaction as { kind: ReactionKind } | null)?.kind ?? null,
   };
+}
+
+export async function getReactionUsers(
+  targetType: ReactionTargetType,
+  targetId: string
+): Promise<
+  {
+    user_id: string;
+    kind: ReactionKind;
+    created_at: string;
+    profiles: {
+      username: string;
+      display_name: string | null;
+      avatar_url: string | null;
+    } | null;
+  }[]
+> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("reactions")
+    .select(
+      `
+      user_id,
+      kind,
+      created_at,
+      profiles:user_id (username, display_name, avatar_url)
+    `
+    )
+    .eq("target_type", targetType)
+    .eq("target_id", targetId)
+    .order("created_at", { ascending: false });
+
+  if (error) return [];
+  return (data ?? []).map((row) => ({
+    user_id: row.user_id,
+    kind: row.kind,
+    created_at: row.created_at,
+    profiles: Array.isArray(row.profiles) ? (row.profiles[0] ?? null) : row.profiles,
+  }));
 }

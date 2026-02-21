@@ -9,7 +9,11 @@ import {
   useState,
 } from "react";
 import { createClient } from "@/lib/supabase/client";
-import type { User as SupabaseUser } from "@supabase/supabase-js";
+import type {
+  AuthChangeEvent,
+  Session,
+  User as SupabaseUser,
+} from "@supabase/supabase-js";
 
 export interface UserProfile {
   id: string;
@@ -43,6 +47,10 @@ interface UserProviderProps {
   children: React.ReactNode;
 }
 
+interface ProfileUpdatePayload {
+  new: Partial<UserProfile>;
+}
+
 export function UserProvider({
   initialUser,
   initialProfile,
@@ -73,7 +81,7 @@ export function UserProvider({
     const supabase = createClient();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      async (_event: AuthChangeEvent, session: Session | null) => {
         const nextUser = session?.user ?? null;
         setUser(nextUser);
 
@@ -88,7 +96,8 @@ export function UserProvider({
 
     // If no initial server data was provided, do a client-side fetch
     if (!initialUser) {
-      supabase.auth.getUser().then(async ({ data: { user: u } }) => {
+      supabase.auth.getUser().then(async (result: { data: { user: SupabaseUser | null } }) => {
+        const u = result.data.user;
         setUser(u);
         if (u) await fetchProfile(u.id);
         setIsLoading(false);
@@ -115,9 +124,9 @@ export function UserProvider({
           table: "profiles",
           filter: `id=eq.${user.id}`,
         },
-        (payload) => {
+        (payload: ProfileUpdatePayload) => {
           setProfile((prev) =>
-            prev ? { ...prev, ...(payload.new as Partial<UserProfile>) } : null
+            prev ? { ...prev, ...payload.new } : null
           );
         }
       )

@@ -72,14 +72,24 @@ export function useSearch() {
     }
 
     setIsLoading(true);
+    let cancelled = false;
 
     debounceTimer.current = setTimeout(async () => {
-      const data = await globalSearch(query.trim());
-      setResults(data);
-      setIsLoading(false);
+      try {
+        const data = await globalSearch(query.trim());
+        if (!cancelled) {
+          setResults(data);
+          setIsLoading(false);
+        }
+      } catch (err) {
+        if (cancelled) return;
+        if (err instanceof Error && err.name === "AbortError") return;
+        setIsLoading(false);
+      }
     }, DEBOUNCE_MS);
 
     return () => {
+      cancelled = true;
       if (debounceTimer.current) clearTimeout(debounceTimer.current);
     };
   }, [query]);

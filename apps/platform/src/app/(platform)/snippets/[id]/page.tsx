@@ -1,10 +1,13 @@
-﻿import { getTranslations, setRequestLocale } from "@/lib/i18n-server";
+import { getTranslations, setRequestLocale } from "@/lib/i18n-server";
 import { notFound } from "next/navigation";
 import { Link } from "@/i18n/navigation";
 import { Badge } from "@/components/ui/badge";
 import { CodeBlock } from "@/components/snippets/code-block";
 import { SnippetActions } from "@/components/snippets/snippet-actions";
+import { SnippetCardActions } from "@/components/snippets/snippet-card-actions";
+import { CommentSection } from "@/components/forum/comment-section";
 import { getSnippetById } from "@/lib/actions/snippets";
+import { getComments } from "@/lib/actions/comments";
 import { createClient } from "@/lib/supabase/server";
 import { User, Calendar, Lock, Globe } from "lucide-react";
 
@@ -28,12 +31,27 @@ export default async function SnippetDetailPage({ params }: PageProps) {
   const { data: snippet } = await getSnippetById(id);
   if (!snippet) notFound();
 
-  // Check if current user is the author
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   const isAuthor = user?.id === snippet.user_id;
+  const isAuthenticated = !!user;
+
+  // Fetch comments and current user profile in parallel
+  const [{ data: comments }] = await Promise.all([
+    getComments("snippet", id),
+  ]);
+
+  let currentUserProfile: { id: string; username: string; display_name: string | null; avatar_url: string | null; level: number } | null = null;
+  if (user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("username, display_name, avatar_url, level")
+      .eq("id", user.id)
+      .single();
+    if (profile) currentUserProfile = { id: user.id, ...profile };
+  }
 
   const authorName =
     snippet.profiles?.display_name ||
@@ -95,13 +113,24 @@ export default async function SnippetDetailPage({ params }: PageProps) {
       {/* Code */}
       <CodeBlock code={snippet.code} language={snippet.language} />
 
-      {/* Actions (delete button for author) */}
-      {isAuthor && (
-        <SnippetActions
-          snippetId={snippet.id}
-          isPublic={snippet.is_public}
-        />
-      )}
+      {/* Like / Bookmark / Share */}
+      <SnippetCardActions snippetId={snippet.id} />
+
+      <SnippetActions
+        snippetId={snippet.id}
+        isPublic={snippet.is_public}
+        isAuthor={isAuthor}
+        isAuthenticated={isAuthenticated}
+      />
+
+      {/* Comments */}
+      <CommentSection
+        targetType="snippet"
+        targetId={snippet.id}
+        comments={comments}
+        isAuthenticated={isAuthenticated}
+        currentUser={currentUserProfile}
+      />
     </div>
   );
 }

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
 import { Plus, Code2 } from "lucide-react";
 import { getSnippets } from "@/lib/actions/snippets";
-import { SnippetCard } from "@/components/snippets/snippet-card";
+import { SnippetsList } from "@/components/snippets/snippets-list";
 import { SnippetsLiveUpdater } from "@/components/snippets/snippets-live-updater";
 import type { Metadata } from "next";
 
@@ -37,13 +37,9 @@ export default async function SnippetsPage({ params }: PageProps) {
       {/* Real-time banner: new snippets notification */}
       <SnippetsLiveUpdater />
 
-      {/* Snippet grid */}
+      {/* Snippet grid — client component handles real-time DELETE filtering */}
       {snippets.length > 0 ? (
-        <div className="grid gap-4 sm:grid-cols-2">
-          {snippets.map((snippet) => (
-            <SnippetCard key={snippet.id} snippet={snippet} />
-          ))}
-        </div>
+        <SnippetsList initialSnippets={snippets} />
       ) : (
         <Card>
           <CardContent className="flex flex-col items-center justify-center gap-3 py-16 text-center">
