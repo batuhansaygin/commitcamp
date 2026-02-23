@@ -2,13 +2,15 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { toggleReaction } from "@/lib/actions/reactions";
+import { toggleReaction, getCardState } from "@/lib/actions/reactions";
 import { toggleBookmark } from "@/lib/actions/bookmarks";
+import { useUser } from "@/components/providers/user-provider";
 
 export type CardTargetType = "post" | "snippet";
 
 interface ActionsState {
   likeCount: number;
+  commentCount: number;
   isLiked: boolean;
   isBookmarked: boolean;
   isInitialized: boolean;
@@ -16,6 +18,7 @@ interface ActionsState {
 
 interface UseCardActionsReturn {
   likeCount: number;
+  commentCount: number;
   isLiked: boolean;
   isBookmarked: boolean;
   isInitialized: boolean;
@@ -34,8 +37,12 @@ export function useCardActions(
   targetType: CardTargetType,
   _revalidatePathStr: string
 ): UseCardActionsReturn {
+  const { user } = useUser();
+  const viewerId = user?.id ?? null;
+
   const [state, setState] = useState<ActionsState>({
     likeCount: 0,
+    commentCount: 0,
     isLiked: false,
     isBookmarked: false,
     isInitialized: false,
@@ -52,86 +59,51 @@ export function useCardActions(
     return () => { mountedRef.current = false; };
   }, []);
 
-  const getCurrentUser = useCallback(async () => {
-    const supabase = createClient();
-    try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (user) return user;
-    } catch {
-      // fall through
-    }
-
-    try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      return session?.user ?? null;
-    } catch {
-      return null;
-    }
-  }, []);
-
-  // Initial data fetch
   useEffect(() => {
-    const supabase = createClient();
+    currentUserIdRef.current = viewerId;
+  }, [viewerId]);
+
+  // Fetch initial state via server action (reliable cookie-based auth).
+  // No viewerId dep -- the server action reads auth from cookies directly.
+  useEffect(() => {
     let cancelled = false;
 
     (async () => {
       try {
-        const { count } = await supabase
-          .from("reactions")
-          .select("*", { count: "exact", head: true })
-          .eq("target_type", targetType)
-          .eq("target_id", targetId);
-
-        const user = await getCurrentUser();
-
-        if (cancelled) return;
-
-        if (user) {
-          currentUserIdRef.current = user.id;
-          const [{ data: reaction }, { data: bookmark }] = await Promise.all([
-            supabase
-              .from("reactions")
-              .select("user_id")
-              .eq("user_id", user.id)
-              .eq("target_type", targetType)
-              .eq("target_id", targetId)
-              .maybeSingle(),
-            supabase
-              .from("bookmarks")
-              .select("user_id")
-              .eq("user_id", user.id)
-              .eq("target_type", targetType)
-              .eq("target_id", targetId)
-              .maybeSingle(),
-          ]);
-          if (cancelled) return;
-          setState({
-            likeCount: count ?? 0,
-            isLiked: !!reaction,
-            isBookmarked: !!bookmark,
-            isInitialized: true,
-          });
-        } else {
-          setState({
-            likeCount: count ?? 0,
-            isLiked: false,
-            isBookmarked: false,
-            isInitialized: true,
-          });
-        }
-      } catch {
+        const result = await getCardState(targetType, targetId);
         if (!cancelled) {
-          setState((prev) => ({ ...prev, isInitialized: true }));
+          setState({ ...result, isInitialized: true });
+        }
+      } catch (err: unknown) {
+        if (err instanceof Error && err.name === "AbortError") return;
+        // Fallback: browser client for count only
+        try {
+          const supabase = createClient();
+          const { data: reactions } = await supabase
+            .from("reactions")
+            .select("user_id")
+            .eq("target_type", targetType)
+            .eq("target_id", targetId);
+
+          const likeCount = reactions?.length ?? 0;
+          const uid = currentUserIdRef.current;
+          const isLiked = uid
+            ? reactions?.some((r: { user_id: string }) => r.user_id === uid) ?? false
+            : false;
+
+          if (!cancelled) {
+            setState({ likeCount, commentCount: 0, isLiked, isBookmarked: false, isInitialized: true });
+          }
+        } catch {
+          if (!cancelled) {
+            setState((prev) => ({ ...prev, isInitialized: true }));
+          }
         }
       }
     })();
 
     return () => { cancelled = true; };
-  }, [targetId, targetType, getCurrentUser]);
+  }, [targetId, targetType]);
 
   // Realtime — other users' reactions
   useEffect(() => {
@@ -197,13 +169,10 @@ export function useCardActions(
     (async () => {
       try {
         const basePath = targetType === "post" ? "/forum" : "/snippets";
-        const result = await toggleReaction(
-          targetType,
-          targetId,
-          "like",
-          basePath
-        );
-        if (result.error) revert();
+        const result = await toggleReaction(targetType, targetId, "like", basePath);
+        if (result.error) {
+          revert();
+        }
       } catch {
         revert();
       } finally {
@@ -241,6 +210,7 @@ export function useCardActions(
 
   return {
     likeCount: state.likeCount,
+    commentCount: state.commentCount,
     isLiked: state.isLiked,
     isBookmarked: state.isBookmarked,
     isInitialized: state.isInitialized,

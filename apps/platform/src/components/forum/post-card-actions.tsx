@@ -11,7 +11,7 @@ interface PostCardActionsProps {
 }
 
 export function PostCardActions({ postId }: PostCardActionsProps) {
-  const { likeCount, isLiked, isBookmarked, handleLike, handleBookmark } =
+  const { likeCount, commentCount, isLiked, isBookmarked, handleLike, handleBookmark } =
     useCardActions(postId, "post", "/forum");
 
   const [shared, setShared] = useState(false);
@@ -65,6 +65,7 @@ export function PostCardActions({ postId }: PostCardActionsProps) {
         className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-medium text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
       >
         <MessageCircle className="h-3.5 w-3.5" />
+        {commentCount > 0 && <span>{commentCount}</span>}
       </a>
 
       {/* Bookmark */}

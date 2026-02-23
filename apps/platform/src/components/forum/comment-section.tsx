@@ -5,7 +5,7 @@ import { useFormStatus } from "react-dom";
 import { useTranslations } from "@/lib/i18n";
 import { Link } from "@/i18n/navigation";
 import { addCommentDirect, deleteComment, updateComment } from "@/lib/actions/comments";
-import { toggleReaction } from "@/lib/actions/reactions";
+import { toggleReaction, getCommentReactions } from "@/lib/actions/reactions";
 import { Button } from "@/components/ui/button";
 import { ReactionUsersDialog } from "@/components/reactions/reaction-users-dialog";
 import { ReportDialog } from "@/components/reports/report-dialog";
@@ -174,39 +174,54 @@ export function CommentSection({
       return;
     }
 
-    const supabase = createClient();
-    const loadReactions = async () => {
-      const { data: reactions } = await supabase
-        .from("reactions")
-        .select("target_id,user_id")
-        .eq("target_type", "comment")
-        .in("target_id", commentIds);
+    let cancelled = false;
 
-      const counts: Record<string, number> = {};
-      for (const id of commentIds) counts[id] = 0;
-      for (const reaction of reactions ?? []) {
-        counts[reaction.target_id] = (counts[reaction.target_id] ?? 0) + 1;
+    (async () => {
+      try {
+        const { counts, likedByMe } = await getCommentReactions(commentIds);
+        if (!cancelled) {
+          setReactionCounts(counts);
+          setReactionLikedByMe(likedByMe);
+        }
+      } catch (err: unknown) {
+        if (err instanceof Error && err.name === "AbortError") return;
+        // Fallback: browser client
+        try {
+          const supabase = createClient();
+          const { data: reactions } = await supabase
+            .from("reactions")
+            .select("target_id,user_id")
+            .eq("target_type", "comment")
+            .in("target_id", commentIds);
+
+          if (cancelled) return;
+
+          const counts: Record<string, number> = {};
+          for (const id of commentIds) counts[id] = 0;
+          for (const reaction of reactions ?? []) {
+            counts[reaction.target_id] = (counts[reaction.target_id] ?? 0) + 1;
+          }
+          setReactionCounts(counts);
+
+          if (!currentUser) {
+            setReactionLikedByMe({});
+            return;
+          }
+
+          const liked: Record<string, boolean> = {};
+          for (const reaction of reactions ?? []) {
+            if (reaction.user_id === currentUser.id) {
+              liked[reaction.target_id] = true;
+            }
+          }
+          setReactionLikedByMe(liked);
+        } catch {
+          /* silent */
+        }
       }
-      setReactionCounts(counts);
+    })();
 
-      if (!currentUser) {
-        setReactionLikedByMe({});
-        return;
-      }
-
-      const { data: ownReactions } = await supabase
-        .from("reactions")
-        .select("target_id")
-        .eq("target_type", "comment")
-        .eq("user_id", currentUser.id)
-        .in("target_id", commentIds);
-
-      const liked: Record<string, boolean> = {};
-      for (const reaction of ownReactions ?? []) liked[reaction.target_id] = true;
-      setReactionLikedByMe(liked);
-    };
-
-    void loadReactions();
+    return () => { cancelled = true; };
   }, [liveComments, currentUser]);
 
   // Supabase Realtime — live comment updates without page refresh

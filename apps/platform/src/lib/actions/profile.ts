@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { updateProfileSchema } from "@/lib/validations/profile";
 import type { Profile } from "@/lib/types/profiles";
 import type { ProfileStats, FollowerEntry } from "@/lib/types/profile-page";
@@ -313,6 +314,64 @@ export async function updateCoverUrl(url: string): Promise<ActionResult> {
     return { success: true, url };
   } catch {
     return { error: "Not authenticated" };
+  }
+}
+
+/** Upload avatar/cover image on the server and persist profile URL. */
+export async function uploadProfileMedia(formData: FormData): Promise<ActionResult> {
+  try {
+    const kindRaw = formData.get("kind");
+    const fileRaw = formData.get("file");
+    const kind = kindRaw === "cover" ? "cover" : kindRaw === "avatar" ? "avatar" : null;
+    if (!kind) return { error: "Invalid upload type." };
+    if (!(fileRaw instanceof File)) return { error: "No file provided." };
+
+    const file = fileRaw;
+    const maxSize = kind === "cover" ? 5 * 1024 * 1024 : 2 * 1024 * 1024;
+    const allowedMime = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (file.size > maxSize) {
+      return {
+        error:
+          kind === "cover"
+            ? "Cover image must be smaller than 5 MB."
+            : "Avatar must be smaller than 2 MB.",
+      };
+    }
+    if (!allowedMime.includes(file.type)) {
+      return { error: "Unsupported file type. Use jpg, png, webp, or gif." };
+    }
+
+    const { supabase, user } = await getAuthenticatedUser();
+    const admin = createAdminClient();
+
+    const extension = (file.name.split(".").pop() ?? "bin").toLowerCase();
+    const bucket = kind === "cover" ? "covers" : "avatars";
+    const path = `${user.id}/${Date.now()}.${extension}`;
+    const bytes = new Uint8Array(await file.arrayBuffer());
+
+    const { error: uploadError } = await admin.storage
+      .from(bucket)
+      .upload(path, bytes, { upsert: true, contentType: file.type });
+    if (uploadError) return { error: uploadError.message };
+
+    const { data } = admin.storage.from(bucket).getPublicUrl(path);
+    const publicUrl = data.publicUrl;
+
+    const patch =
+      kind === "cover"
+        ? ({ cover_url: publicUrl } as const)
+        : ({ avatar_url: publicUrl } as const);
+    const { error: updateError } = await supabase
+      .from("profiles")
+      .update(patch)
+      .eq("id", user.id);
+    if (updateError) return { error: updateError.message };
+
+    revalidatePath("/settings");
+    revalidatePath("/profile");
+    return { success: true, url: publicUrl };
+  } catch {
+    return { error: "Upload failed." };
   }
 }
 

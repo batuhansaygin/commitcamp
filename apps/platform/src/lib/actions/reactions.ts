@@ -98,6 +98,103 @@ export async function toggleReaction(
   }
 }
 
+/**
+ * Fetch initial card state (like count + user flags) for a post or snippet.
+ * Called from client hooks via server action for reliable cookie-based auth.
+ */
+export async function getCardState(
+  targetType: "post" | "snippet",
+  targetId: string
+): Promise<{
+  likeCount: number;
+  commentCount: number;
+  isLiked: boolean;
+  isBookmarked: boolean;
+}> {
+  const supabase = await createClient();
+
+  const [{ data: reactions }, { data: comments }] = await Promise.all([
+    supabase
+      .from("reactions")
+      .select("user_id")
+      .eq("target_type", targetType)
+      .eq("target_id", targetId),
+    supabase
+      .from("comments")
+      .select("id")
+      .eq("target_type", targetType)
+      .eq("target_id", targetId),
+  ]);
+
+  const reactionRows = reactions ?? [];
+  const likeCount = reactionRows.length;
+  const commentCount = comments?.length ?? 0;
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { likeCount, commentCount, isLiked: false, isBookmarked: false };
+  }
+
+  const isLiked = reactionRows.some((r) => r.user_id === user.id);
+
+  const { data: bookmark } = await supabase
+    .from("bookmarks")
+    .select("user_id")
+    .eq("user_id", user.id)
+    .eq("target_type", targetType)
+    .eq("target_id", targetId)
+    .maybeSingle();
+
+  return { likeCount, commentCount, isLiked, isBookmarked: !!bookmark };
+}
+
+/**
+ * Batch-fetch comment reaction counts and current user's liked state.
+ * Single query + auth check -- used by CommentSection.
+ */
+export async function getCommentReactions(
+  commentIds: string[]
+): Promise<{
+  counts: Record<string, number>;
+  likedByMe: Record<string, boolean>;
+}> {
+  if (commentIds.length === 0) return { counts: {}, likedByMe: {} };
+
+  const supabase = await createClient();
+
+  const { data: reactions } = await supabase
+    .from("reactions")
+    .select("target_id, user_id")
+    .eq("target_type", "comment")
+    .in("target_id", commentIds);
+
+  const rows = reactions ?? [];
+
+  const counts: Record<string, number> = {};
+  for (const id of commentIds) counts[id] = 0;
+  for (const row of rows) {
+    counts[row.target_id] = (counts[row.target_id] ?? 0) + 1;
+  }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const likedByMe: Record<string, boolean> = {};
+  if (user) {
+    for (const row of rows) {
+      if (row.user_id === user.id) {
+        likedByMe[row.target_id] = true;
+      }
+    }
+  }
+
+  return { counts, likedByMe };
+}
+
 /** Fetch the reaction count and current user's reaction for a target. */
 export async function getReactionState(
   targetType: ReactionTargetType,
@@ -149,25 +246,38 @@ export async function getReactionUsers(
   }[]
 > {
   const supabase = await createClient();
-  const { data, error } = await supabase
+  const { data: reactions, error } = await supabase
     .from("reactions")
-    .select(
-      `
-      user_id,
-      kind,
-      created_at,
-      profiles:user_id (username, display_name, avatar_url)
-    `
-    )
+    .select("user_id, kind, created_at")
     .eq("target_type", targetType)
     .eq("target_id", targetId)
     .order("created_at", { ascending: false });
 
   if (error) return [];
-  return (data ?? []).map((row) => ({
+  const rows = reactions ?? [];
+  const userIds = Array.from(new Set(rows.map((row) => row.user_id)));
+  if (userIds.length === 0) return [];
+
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("id, username, display_name, avatar_url")
+    .in("id", userIds);
+
+  const profileMap = new Map(
+    (profiles ?? []).map((p) => [
+      p.id,
+      {
+        username: p.username,
+        display_name: p.display_name,
+        avatar_url: p.avatar_url,
+      },
+    ])
+  );
+
+  return rows.map((row) => ({
     user_id: row.user_id,
     kind: row.kind,
     created_at: row.created_at,
-    profiles: Array.isArray(row.profiles) ? (row.profiles[0] ?? null) : row.profiles,
+    profiles: profileMap.get(row.user_id) ?? null,
   }));
 }

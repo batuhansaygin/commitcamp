@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Heart, Loader2 } from "lucide-react";
 import { getReactionUsers, type ReactionTargetType } from "@/lib/actions/reactions";
 import { useTranslations } from "@/lib/i18n";
@@ -42,9 +42,14 @@ export function ReactionUsersDialog({
   count,
 }: ReactionUsersDialogProps) {
   const t = useTranslations("reactions");
+  const [mounted, setMounted] = useState(false);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState<ReactionUser[]>([]);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleOpenChange = (nextOpen: boolean) => {
     setOpen(nextOpen);
@@ -58,6 +63,15 @@ export function ReactionUsersDialog({
         setLoading(false);
       });
   };
+
+  // Render a plain count during SSR to avoid Radix Dialog aria-controls ID mismatch
+  if (!mounted) {
+    return (
+      <span className="inline-flex items-center justify-center h-auto px-1.5 py-1 text-xs text-muted-foreground">
+        {count}
+      </span>
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>

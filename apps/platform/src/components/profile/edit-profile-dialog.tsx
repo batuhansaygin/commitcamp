@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect, useRef, useCallback, useActionState } from "react";
 import { useTranslations } from "@/lib/i18n";
@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { updateProfile } from "@/lib/actions/profile";
 import { updateAvatarUrl, updateCoverUrl } from "@/lib/actions/profile";
 import { checkUsernameAvailable } from "@/lib/actions/profile";
+import { uploadProfileMedia } from "@/lib/actions/profile";
 import { createClient } from "@/lib/supabase/client";
 import { Loader2, AlertCircle, CheckCircle2, X, Camera, Edit } from "lucide-react";
 import type { Profile } from "@/lib/types/profiles";
@@ -136,36 +137,18 @@ export function EditProfileDialog({ profile, trigger }: EditProfileDialogProps) 
     }
 
     setUploading(true);
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { setUploading(false); return; }
+    const payload = new FormData();
+    payload.set("kind", bucket === "avatars" ? "avatar" : "cover");
+    payload.set("file", file);
 
-    const ext = file.name.split(".").pop();
-    const path = `${user.id}/${Date.now()}.${ext}`;
-
-    const { error } = await supabase.storage.from(bucket).upload(path, file, {
-      upsert: true,
-      contentType: file.type,
-    });
-
-    if (error) {
-      alert("Upload failed: " + error.message);
+    const result = await uploadProfileMedia(payload);
+    if (result.error || !result.url) {
+      alert("Upload failed: " + (result.error ?? "unknown error"));
       setUploading(false);
       return;
     }
 
-    const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(path);
-    const publicUrl = urlData.publicUrl;
-
-    if (bucket === "avatars") {
-      await updateAvatarUrl(publicUrl);
-      setAvatarUrl(publicUrl);
-    } else {
-      await updateCoverUrl(publicUrl);
-      setCoverUrl(publicUrl);
-    }
-
-    onSuccess(publicUrl);
+    onSuccess(result.url);
     setUploading(false);
   }
 
