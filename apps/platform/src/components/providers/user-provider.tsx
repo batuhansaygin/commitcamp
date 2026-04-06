@@ -140,6 +140,30 @@ export function UserProvider({
     };
   }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Apply pending referral code from signup (?ref= or localStorage) once signed in
+  useEffect(() => {
+    if (!user?.id || typeof window === "undefined") return;
+    const raw = localStorage.getItem("cc_pending_ref");
+    const code = raw?.trim();
+    if (!code) return;
+
+    let cancelled = false;
+    void (async () => {
+      try {
+        const { applyReferralCode } = await import("@/lib/actions/referral/referral");
+        const result = await applyReferralCode(code);
+        if (cancelled) return;
+        if (result.ok) localStorage.removeItem("cc_pending_ref");
+      } catch {
+        /* ignore */
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
+
   return (
     <UserContext.Provider value={{ user, profile, isLoading, refreshProfile }}>
       {children}

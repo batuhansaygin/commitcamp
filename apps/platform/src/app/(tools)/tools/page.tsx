@@ -15,6 +15,11 @@ import {
   KeyRound,
   Clock,
   Type,
+  Bot,
+  FileText,
+  GitPullRequest,
+  Languages,
+  GraduationCap,
   ArrowRight,
   Zap,
   Shield,
@@ -128,12 +133,67 @@ const TOOLS: Tool[] = [
     color: "text-rose-400",
     iconBg: "bg-rose-500/10 dark:bg-rose-500/15",
   },
+  {
+    href: "/tools/code-review",
+    icon: Bot,
+    title: "AI Code Reviewer",
+    description:
+      "Analyze code for bugs, security, performance, and best practices with an A-F grade report.",
+    category: "AI",
+    color: "text-indigo-400",
+    iconBg: "bg-indigo-500/10 dark:bg-indigo-500/15",
+    badge: "Pro",
+  },
+  {
+    href: "/tools/readme-generator",
+    icon: FileText,
+    title: "AI README Generator",
+    description:
+      "Create professional README and documentation markdown from project context or code.",
+    category: "AI",
+    color: "text-teal-400",
+    iconBg: "bg-teal-500/10 dark:bg-teal-500/15",
+    badge: "Pro",
+  },
+  {
+    href: "/tools/commit-generator",
+    icon: GitPullRequest,
+    title: "AI Commit + PR Generator",
+    description:
+      "Generate conventional commit messages and PR descriptions from change summaries or diffs.",
+    category: "AI",
+    color: "text-sky-400",
+    iconBg: "bg-sky-500/10 dark:bg-sky-500/15",
+    badge: "Pro",
+  },
+  {
+    href: "/tools/code-converter",
+    icon: Languages,
+    title: "AI Code Converter",
+    description:
+      "Translate code across programming languages with idiomatic style and behavior parity.",
+    category: "AI",
+    color: "text-fuchsia-400",
+    iconBg: "bg-fuchsia-500/10 dark:bg-fuchsia-500/15",
+    badge: "Pro",
+  },
+  {
+    href: "/tools/interview-prep",
+    icon: GraduationCap,
+    title: "AI Interview Prep",
+    description:
+      "Practice technical interviews with adaptive questions, scoring, and actionable feedback.",
+    category: "AI",
+    color: "text-lime-400",
+    iconBg: "bg-lime-500/10 dark:bg-lime-500/15",
+    badge: "Pro",
+  },
 ];
 
-const CATEGORIES = ["All", "Format", "Validate", "Encode", "Decode", "Convert", "Generate"];
+const CATEGORIES = ["All", "Format", "Validate", "Encode", "Decode", "Convert", "Generate", "AI"];
 
 const STATS = [
-  { icon: Package, value: "8", label: "Tools" },
+  { icon: Package, value: "13", label: "Tools" },
   { icon: Zap, value: "100%", label: "Free" },
   { icon: Wifi, value: "0", label: "Server calls" },
   { icon: Shield, value: "Private", label: "No data stored" },
@@ -146,6 +206,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   Decode: "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400",
   Convert: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
   Generate: "bg-orange-500/10 text-orange-600 dark:text-orange-400",
+  AI: "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400",
 };
 
 export default async function ToolsPage({ params }: PageProps) {

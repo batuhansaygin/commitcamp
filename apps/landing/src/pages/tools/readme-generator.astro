@@ -1,0 +1,34 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { Navbar } from '../../components/Navbar';
+import Footer from '../../components/Footer.astro';
+import { t as getT } from '../../i18n/translations';
+import { config } from '../../config';
+import { buildToolPageJsonLd } from '../../lib/seo';
+
+const lang = 'en';
+const tr = getT(lang);
+const platformUrl = config.platformUrl;
+
+const title = 'AI README Generator — Free Online Tool | CommitCamp';
+const description = 'Generate professional README files and docs from your project notes or code.';
+const canonicalPath = '/tools/readme-generator/';
+const siteOrigin = Astro.site?.origin ?? 'https://commitcamp.com';
+const jsonLd = buildToolPageJsonLd(siteOrigin, {
+  name: 'CommitCamp AI README Generator',
+  description,
+  landingPath: canonicalPath,
+});
+---
+<BaseLayout title={title} description={description} lang={lang} canonicalPath={canonicalPath} jsonLd={jsonLd}>
+  <Navbar t={tr.nav} lang={lang} platformUrl={platformUrl} client:load />
+  <main class="mx-auto max-w-4xl px-4 pt-28 pb-16 md:px-6">
+    <h1 class="text-3xl font-bold md:text-4xl">AI README Generator</h1>
+    <p class="mt-3 text-zinc-500 dark:text-zinc-400">Create polished README files with sections like Installation, Usage, API, Contributing, and License.</p>
+    <div class="mt-8 flex gap-3">
+      <a href={`${platformUrl}/tools/readme-generator`} class="rounded-lg bg-gradient-to-r from-cyan-500 to-purple-600 px-5 py-3 font-semibold text-white">Open Tool</a>
+      <a href={`${platformUrl}/pricing`} class="rounded-lg border border-zinc-300 dark:border-zinc-700 px-5 py-3 font-semibold">See Pricing</a>
+    </div>
+  </main>
+  <Footer t={tr.footer} lang={lang} />
+</BaseLayout>

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useTranslations } from "@/lib/i18n";
 import { Link, usePathname } from "@/i18n/navigation";
@@ -39,6 +39,19 @@ const TOOL_GROUPS: { labelKey: string; tools: ToolItem[] }[] = [
     tools: [
       { href: "/tools/jwt-decoder", icon: "🔑", titleKey: "jwtDecoder" },
       { href: "/tools/timestamp-converter", icon: "⏱", titleKey: "timestampConverter" },
+    ],
+  },
+  {
+    labelKey: "generate",
+    tools: [{ href: "/tools/code-review", icon: "AI", titleKey: "codeReview" }],
+  },
+  {
+    labelKey: "generate",
+    tools: [
+      { href: "/tools/readme-generator", icon: "MD", titleKey: "readmeGenerator" },
+      { href: "/tools/commit-generator", icon: "PR", titleKey: "commitGenerator" },
+      { href: "/tools/code-converter", icon: "↔", titleKey: "codeConverter" },
+      { href: "/tools/interview-prep", icon: "Q?", titleKey: "interviewPrep" },
     ],
   },
 ];

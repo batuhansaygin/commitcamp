@@ -17,6 +17,9 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   ArrowLeft,
+  ShoppingBag,
+  Receipt,
+  DollarSign,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -27,6 +30,9 @@ const NAV_ITEMS = [
   { href: "/admin/content",      label: "Content",          icon: FileText },
   { href: "/admin/achievements", label: "Achievements",     icon: Trophy },
   { href: "/admin/roles",        label: "Role Matrix",      icon: ShieldCheck },
+  { href: "/admin/products",     label: "Products",         icon: ShoppingBag },
+  { href: "/admin/subscriptions",label: "Subscriptions",    icon: Receipt },
+  { href: "/admin/revenue",      label: "Revenue",          icon: DollarSign },
   { href: "/admin/settings",     label: "Platform Settings",icon: Settings2, systemAdminOnly: true },
   { href: "/admin/audit",        label: "Audit Logs",       icon: ScrollText },
 ];

@@ -13,7 +13,8 @@ export type XPReason =
   | "challenge_created"
   | "daily_challenge"
   | "achievement_unlocked"
-  | "hint_penalty";
+  | "hint_penalty"
+  | "referral_reward";
 
 /** XP transaction row as stored in the database. */
 export interface XPTransaction {

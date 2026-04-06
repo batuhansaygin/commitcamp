@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { useRouter } from "@/i18n/navigation";
+import { useState, useMemo, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { signupSchema } from "@/lib/validations/auth";
 import { Button } from "@/components/ui/button";
@@ -39,11 +38,15 @@ function generatePassword(length = 16) {
   return pwd;
 }
 
+function normalizeReferralCode(raw: string): string {
+  return raw.trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+}
+
 export function SignupForm() {
-  const router = useRouter();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [referralCode, setReferralCode] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -51,6 +54,17 @@ export function SignupForm() {
 
   // Generate once per mount (changes on every page refresh)
   const namePlaceholder = useMemo(() => randomDevName(), []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const ref = new URLSearchParams(window.location.search).get("ref");
+    if (!ref) return;
+    const n = normalizeReferralCode(ref);
+    if (n.length >= 4) {
+      setReferralCode(n);
+      localStorage.setItem("cc_pending_ref", n);
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,6 +93,11 @@ export function SignupForm() {
       setError(authError.message);
       setLoading(false);
       return;
+    }
+
+    const rc = normalizeReferralCode(referralCode);
+    if (rc.length >= 4) {
+      localStorage.setItem("cc_pending_ref", rc);
     }
 
     setSuccess(true);
@@ -153,6 +172,25 @@ export function SignupForm() {
               />
             </div>
           </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-muted-foreground">
+              Referral code (optional)
+            </label>
+            <input
+              type="text"
+              value={referralCode}
+              onChange={(e) => {
+                const v = normalizeReferralCode(e.target.value);
+                setReferralCode(v);
+                if (v.length >= 4) localStorage.setItem("cc_pending_ref", v);
+              }}
+              className="w-full rounded-lg border border-border bg-input py-2 px-3 font-mono text-sm uppercase focus:outline-none focus:ring-2 focus:ring-ring"
+              placeholder="Friend's code"
+              maxLength={16}
+              autoComplete="off"
+            />
+          </div>
+
           <div>
             <div className="mb-1 flex items-center justify-between">
               <label className="text-xs font-medium text-muted-foreground">Password</label>

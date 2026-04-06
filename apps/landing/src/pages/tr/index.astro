@@ -8,19 +8,31 @@ import { CodePreviewSection } from '../../components/CodePreviewSection';
 import { LeaderboardPreviewSection } from '../../components/LeaderboardPreviewSection';
 import { CommunitySection } from '../../components/CommunitySection';
 import CTASection from '../../components/CTASection.astro';
+import MonetizationSection from '../../components/MonetizationSection.astro';
 import Footer from '../../components/Footer.astro';
 import { t as getT } from '../../i18n/translations';
 import { config } from '../../config';
+import { buildHomeJsonLd, homeAlternates } from '../../lib/seo';
 
 const lang = 'tr';
 const tr = getT(lang);
 const platformUrl = config.platformUrl;
+
+const title = 'CommitCamp — Geliştiriciler İçin Sosyal Platform';
+const description =
+  "Kod paylaşın, projelerinizi sergileyin, XP kazanın ve dünya çapındaki geliştiricilerle bağlantı kurun. CommitCamp'e katılın — sonsuza kadar ücretsiz.";
+const canonicalPath = '/tr/';
+const siteOrigin = Astro.site?.origin ?? 'https://commitcamp.com';
+const jsonLd = buildHomeJsonLd({ siteOrigin, lang, title, description, canonicalPath });
 ---
 
 <BaseLayout
-  title="CommitCamp — Geliştiriciler İçin Sosyal Platform"
-  description="Kod paylaşın, projelerinizi sergileyin, XP kazanın ve dünya çapındaki geliştiricilerle bağlantı kurun. CommitCamp'e katılın — sonsuza kadar ücretsiz."
+  title={title}
+  description={description}
   lang={lang}
+  canonicalPath={canonicalPath}
+  hreflangAlternates={homeAlternates(siteOrigin)}
+  jsonLd={jsonLd}
 >
   <Navbar t={tr.nav} lang={lang} platformUrl={platformUrl} client:load />
   <main>
@@ -30,6 +42,7 @@ const platformUrl = config.platformUrl;
     <CodePreviewSection t={tr.codePreview} client:visible />
     <LeaderboardPreviewSection t={tr.leaderboard} client:visible />
     <CommunitySection t={tr.community} client:visible />
+    <MonetizationSection t={tr.monetization} lang={lang} platformUrl={platformUrl} />
     <CTASection t={tr.cta} lang={lang} platformUrl={platformUrl} />
   </main>
   <Footer t={tr.footer} lang={lang} />

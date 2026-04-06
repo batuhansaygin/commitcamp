@@ -6,10 +6,14 @@ import { SettingsAccount } from "@/components/settings/settings-account";
 import { SettingsAppearance } from "@/components/settings/settings-appearance";
 import { SettingsMessaging } from "@/components/profile/settings-messaging";
 import { SettingsNotifications } from "@/components/settings/settings-notifications";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   SettingsLinkedAccounts,
   type SerializedIdentity,
 } from "@/components/settings/settings-linked-accounts";
+import { getSubscription } from "@/lib/actions/billing/subscriptions";
+import { getReferralPanelData } from "@/lib/actions/referral/referral";
+import { SettingsReferral } from "@/components/settings/settings-referral";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = { title: "Settings — CommitCamp" };
@@ -34,6 +38,10 @@ export default async function SettingsPage() {
   }
 
   const { data: profile, error } = await getCurrentProfile();
+  const [subscription, referralPanel] = await Promise.all([
+    getSubscription(),
+    getReferralPanelData(),
+  ]);
 
   if (error === "Not authenticated") {
     redirect(`/login?redirect=/settings`);
@@ -77,6 +85,16 @@ export default async function SettingsPage() {
         </p>
       </div>
 
+      {referralPanel && !referralPanel.error ? (
+        <SettingsReferral
+          inviteUrl={referralPanel.inviteUrl}
+          code={referralPanel.code}
+          rewardedCount={referralPanel.rewardedCount}
+          pendingCount={referralPanel.pendingCount}
+          hasAppliedReferral={referralPanel.hasAppliedReferral}
+        />
+      ) : null}
+
       <SettingsAccount email={user.email ?? ""} />
       <SettingsLinkedAccounts
         initialIdentities={identities}
@@ -86,6 +104,25 @@ export default async function SettingsPage() {
         pushPreferences={pushPrefs}
         emailPreferences={emailPrefs}
       />
+      {subscription?.status === "trialing" && subscription?.trial_end ? (
+        <Card>
+          <CardContent className="p-4 text-sm">
+            <p className="font-medium">Pro trial active</p>
+            <p className="text-muted-foreground">
+              {(() => {
+                const daysLeft = Math.max(
+                  0,
+                  Math.ceil(
+                    (new Date(subscription.trial_end).getTime() - Date.now()) /
+                      (1000 * 60 * 60 * 24)
+                  )
+                );
+                return `You have ${daysLeft} day${daysLeft === 1 ? "" : "s"} left in your trial.`;
+              })()}
+            </p>
+          </CardContent>
+        </Card>
+      ) : null}
       <SettingsAppearance />
       <SettingsMessaging profile={profile} />
     </div>

@@ -201,3 +201,54 @@ export function levelUpNotificationEmail(data: {
   `);
   return { subject, html };
 }
+
+export function newMarketplaceProductEmail(data: {
+  recipientName: string;
+  productTitle: string;
+  productUrl: string;
+}): { subject: string; html: string } {
+  const subject = `🛍 New marketplace product: ${data.productTitle}`;
+  const html = baseTemplate(`
+    <p style="margin:0 0 8px;font-size:13px;font-weight:600;color:${ACCENT_COLOR};text-transform:uppercase;letter-spacing:1px;">Marketplace Update</p>
+    <h1 style="margin:0 0 18px;font-size:22px;font-weight:700;color:#ffffff;line-height:1.3;">New product is live</h1>
+    <p style="margin:0 0 6px;font-size:15px;color:#ffffff;font-weight:600;">${data.productTitle}</p>
+    <p style="margin:0;font-size:14px;color:rgba(255,255,255,0.6);">Discover new developer resources and digital packs in the CommitCamp marketplace.</p>
+    <div style="text-align:center;">${ctaButton("View Product", data.productUrl)}</div>
+  `);
+  return { subject, html };
+}
+
+export function weeklyToolDigestEmail(data: {
+  recipientName: string;
+  highlights: string[];
+}): { subject: string; html: string } {
+  const subject = "📬 CommitCamp Weekly AI Tools Digest";
+  const items = data.highlights.map((h) => `<li style="margin-bottom:8px;">${h}</li>`).join("");
+  const html = baseTemplate(`
+    <p style="margin:0 0 8px;font-size:13px;font-weight:600;color:${ACCENT_COLOR};text-transform:uppercase;letter-spacing:1px;">Weekly Digest</p>
+    <h1 style="margin:0 0 18px;font-size:22px;font-weight:700;color:#ffffff;line-height:1.3;">This week in CommitCamp</h1>
+    <ul style="margin:0;padding-left:18px;font-size:14px;color:rgba(255,255,255,0.7);line-height:1.6;">
+      ${items}
+    </ul>
+    <div style="text-align:center;">${ctaButton("Open CommitCamp", SITE_URL)}</div>
+  `);
+  return { subject, html };
+}
+
+export function trialEndingEmail(data: {
+  recipientName: string;
+  trialEnd: string;
+  pricingUrl: string;
+}): { subject: string; html: string } {
+  const subject = "⏳ Your CommitCamp Pro trial ends soon";
+  const endDate = new Date(data.trialEnd).toLocaleDateString();
+  const html = baseTemplate(`
+    <p style="margin:0 0 8px;font-size:13px;font-weight:600;color:${ACCENT_COLOR};text-transform:uppercase;letter-spacing:1px;">Trial Reminder</p>
+    <h1 style="margin:0 0 18px;font-size:22px;font-weight:700;color:#ffffff;line-height:1.3;">Your Pro trial ends in 2 days</h1>
+    <p style="margin:0;font-size:14px;color:rgba(255,255,255,0.7);line-height:1.7;">
+      Keep unlimited access to AI tools and premium templates after <strong style="color:#ffffff;">${endDate}</strong>.
+    </p>
+    <div style="text-align:center;">${ctaButton("Keep Pro Active", data.pricingUrl)}</div>
+  `);
+  return { subject, html };
+}

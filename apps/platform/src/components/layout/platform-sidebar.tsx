@@ -24,6 +24,7 @@ import {
   Award,
   Sparkles,
   Swords,
+  Store,
 } from "lucide-react";
 import { VersionBadge } from "@/components/ui/version-badge";
 
@@ -44,6 +45,7 @@ const STATIC_NAV: {
   { href: "/challenges", icon: Swords, label: "Challenges" },
   { href: "/ai-assistant", icon: Sparkles, label: "AI Assistant" },
   { href: "/leaderboard", icon: Trophy, label: "Leaderboard" },
+  { href: "/marketplace", icon: Store, label: "Marketplace" },
   { href: "/achievements", icon: Award, label: "Achievements" },
   { href: "/notifications", icon: Bell, label: "Notifications", showBadge: true },
   { href: "/messages", icon: BookMarked, label: "Messages" },

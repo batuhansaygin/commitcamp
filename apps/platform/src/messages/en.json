@@ -99,6 +99,26 @@
       "milliseconds": "Milliseconds",
       "now": "Now"
     },
+    "codeReview": {
+      "title": "AI Code Reviewer",
+      "description": "Analyze code quality, bugs, security and performance with AI"
+    },
+    "readmeGenerator": {
+      "title": "AI README Generator",
+      "description": "Generate README and docs in markdown format"
+    },
+    "commitGenerator": {
+      "title": "AI Commit + PR Generator",
+      "description": "Create conventional commits and PR descriptions"
+    },
+    "codeConverter": {
+      "title": "AI Code Converter",
+      "description": "Convert source code between programming languages"
+    },
+    "interviewPrep": {
+      "title": "AI Interview Prep",
+      "description": "Practice technical interviews with AI guidance"
+    },
     "saveHistory": "Save history",
     "saveHistoryHint": "When on, your tool usage is saved so you can revisit it later.",
     "recentUsage": "Recent usage",
@@ -115,6 +135,16 @@
       "wrapHtml": "Wrap with <p> tags",
       "startClassic": "Start with \"Lorem ipsum dolor sit amet...\""
     }
+  },
+  "marketplace": {
+    "title": "Marketplace",
+    "subtitle": "Buy and sell developer digital products",
+    "sellProduct": "Sell Product",
+    "myProducts": "My Products",
+    "myPurchases": "My Purchases",
+    "buyNow": "Buy now",
+    "download": "Download",
+    "disabled": "Marketplace is currently disabled."
   },
   "landing": {
     "nav": {
@@ -332,6 +362,21 @@
       "email": "Email Notifications",
       "emailHint": "Receive notifications by email.",
       "comingSoon": "Coming soon"
+    },
+    "referral": {
+      "title": "Invite friends",
+      "description": "Share your link. When a friend subscribes to Pro, you get billing credit (about one month) and unlock Networker on your first referral.",
+      "yourCode": "Your invite code",
+      "copyLink": "Copy invite link",
+      "copied": "Copied",
+      "copyFailed": "Could not copy",
+      "rewarded": "Successful referrals",
+      "pending": "Friends invited (not subscribed yet)",
+      "haveCode": "Have a referral code?",
+      "codePlaceholder": "CODE",
+      "apply": "Apply code",
+      "applied": "Referral code applied.",
+      "alreadyReferred": "A referral is already linked to your account."
     }
   },
   "messages": {

@@ -11,6 +11,7 @@ export const translations = {
       features: 'Features',
       community: 'Community',
       openSource: 'Open Source',
+      pricing: 'Pricing',
       signIn: 'Sign In',
       getStarted: 'Get Started',
     },
@@ -86,8 +87,19 @@ export const translations = {
       subtitle:
         'Start sharing code, building your portfolio, and connecting with developers today.',
       button: 'Create Your Free Account',
+      pricingButton: 'See Pricing',
       signIn: 'Already have an account?',
       signInLink: 'Sign in',
+    },
+    monetization: {
+      title: 'AI tools + Marketplace in one platform',
+      subtitle: 'Use monetized AI workflows and buy/sell developer products without leaving CommitCamp.',
+      aiToolsTitle: 'Pro AI Tooling',
+      aiToolsDesc: 'Code review, README generation, commit/PR writing, code conversion, and interview prep.',
+      marketplaceTitle: 'Digital Product Marketplace',
+      marketplaceDesc: 'Templates, cheat sheets, and curated packs from CommitCamp and the community.',
+      ctaPrimary: 'Upgrade to Pro',
+      ctaSecondary: 'Explore Marketplace'
     },
     footer: {
       tagline: 'The social platform built for developers.',
@@ -116,6 +128,7 @@ export const translations = {
       features: 'Özellikler',
       community: 'Topluluk',
       openSource: 'Açık Kaynak',
+      pricing: 'Fiyatlandırma',
       signIn: 'Giriş Yap',
       getStarted: 'Başla',
     },
@@ -191,8 +204,19 @@ export const translations = {
       subtitle:
         'Kod paylaşmaya, portföyünüzü oluşturmaya ve geliştiricilerle bağlantı kurmaya bugün başlayın.',
       button: 'Ücretsiz Hesap Oluştur',
+      pricingButton: 'Fiyatları Gör',
       signIn: 'Zaten hesabınız var mı?',
       signInLink: 'Giriş yap',
+    },
+    monetization: {
+      title: 'Tek platformda AI araçlar + Marketplace',
+      subtitle: 'Gelir odaklı AI iş akışlarını kullanın ve geliştirici ürünlerini alıp satın.',
+      aiToolsTitle: 'Pro AI Araçları',
+      aiToolsDesc: 'Kod inceleme, README üretimi, commit/PR yazımı, kod çevirme ve mülakat hazırlık.',
+      marketplaceTitle: 'Dijital Ürün Pazaryeri',
+      marketplaceDesc: 'CommitCamp ve topluluktan şablonlar, cheat sheet paketleri ve içerikler.',
+      ctaPrimary: 'Pro\'ya Yükselt',
+      ctaSecondary: 'Marketplace\'i Keşfet'
     },
     footer: {
       tagline: 'Geliştiriciler için oluşturulmuş sosyal platform.',

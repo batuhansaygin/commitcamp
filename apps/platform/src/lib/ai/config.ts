@@ -43,3 +43,18 @@ export const RATE_LIMIT = {
   maxRequestsPerDay: 200,
   maxRequestsPerUser: 30,
 };
+
+export const CODE_CONVERTER_LANGUAGES = [
+  "TypeScript",
+  "JavaScript",
+  "Python",
+  "Go",
+  "Java",
+  "C#",
+  "Rust",
+  "PHP",
+  "Ruby",
+  "Kotlin",
+  "Swift",
+  "SQL",
+] as const;

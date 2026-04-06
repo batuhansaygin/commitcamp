@@ -6,6 +6,8 @@ const PROTECTED_ROUTES = [
   "/snippets/new",
   "/messages",
   "/settings",
+  "/marketplace",
+  "/tools",
 ];
 
 const ADMIN_ROUTES = ["/admin"];

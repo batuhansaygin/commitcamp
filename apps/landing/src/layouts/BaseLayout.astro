@@ -1,14 +1,45 @@
 ---
 import '../styles/global.css';
+import { serializeJsonLd, toAbsoluteUrl } from '../lib/seo';
+
+interface HreflangAlternate {
+  hreflang: string;
+  href: string;
+}
 
 interface Props {
   title: string;
   description: string;
   lang?: string;
+  /** Absolute URL (https://...) */
   ogImage?: string;
+  /** Path starting with /; trailing slash normalized */
+  canonicalPath?: string;
+  hreflangAlternates?: HreflangAlternate[];
+  jsonLd?: Record<string, unknown>;
+  noindex?: boolean;
 }
 
-const { title, description, lang = 'en', ogImage } = Astro.props;
+const {
+  title,
+  description,
+  lang = 'en',
+  ogImage,
+  canonicalPath,
+  hreflangAlternates,
+  jsonLd,
+  noindex = false,
+} = Astro.props;
+
+const siteOrigin = Astro.site?.origin ?? 'https://commitcamp.com';
+const pathForCanonical = canonicalPath ?? Astro.url.pathname;
+const canonicalUrl = toAbsoluteUrl(siteOrigin, pathForCanonical);
+
+const ogLocale = lang === 'tr' ? 'tr_TR' : 'en_US';
+const ogLocaleAlternate = lang === 'tr' ? 'en_US' : 'tr_TR';
+const hasLocaleAlternate = Boolean(hreflangAlternates?.length);
+
+const twitterCard = ogImage ? 'summary_large_image' : 'summary';
 ---
 
 <!doctype html>
@@ -17,19 +48,37 @@ const { title, description, lang = 'en', ogImage } = Astro.props;
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content={description} />
+    <meta name="author" content="CommitCamp" />
+    <meta name="robots" content={noindex ? 'noindex, nofollow' : 'index, follow'} />
     <title>{title}</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="canonical" href={canonicalUrl} />
+
+    {hreflangAlternates?.map((a) => (
+      <link rel="alternate" hreflang={a.hreflang} href={a.href} />
+    ))}
 
     <!-- Open Graph -->
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:type" content="website" />
-    {ogImage && <meta property="og:image" content={ogImage} />}
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:site_name" content="CommitCamp" />
+    <meta property="og:locale" content={ogLocale} />
+    {hasLocaleAlternate ? <meta property="og:locale:alternate" content={ogLocaleAlternate} /> : null}
+    {ogImage ? <meta property="og:image" content={ogImage} /> : null}
 
     <!-- Twitter Card -->
-    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:card" content={twitterCard} />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
+    {ogImage ? <meta name="twitter:image" content={ogImage} /> : null}
+
+    <meta name="theme-color" content="#09090b" />
+
+    {jsonLd ? (
+      <script type="application/ld+json" set:html={serializeJsonLd(jsonLd)} />
+    ) : null}
 
     <!-- Theme script: run before render to prevent flash -->
     <script is:inline>

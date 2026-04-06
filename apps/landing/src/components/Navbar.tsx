@@ -12,6 +12,7 @@ interface NavbarProps {
 const NAV_LINKS = [
   { labelKey: 'features' as const, href: '#features' },
   { labelKey: 'community' as const, href: '#community' },
+  { labelKey: 'pricing' as const, href: '#pricing' },
   { labelKey: 'openSource' as const, href: '#leaderboard' },
 ];
 
@@ -50,7 +51,7 @@ export function Navbar({ t, lang, platformUrl }: NavbarProps) {
           {NAV_LINKS.map(({ labelKey, href }) => (
             <a
               key={href}
-              href={href}
+              href={labelKey === 'pricing' ? `${platformUrl}/pricing` : href}
               className="text-sm font-medium text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
             >
               {t[labelKey]}
@@ -101,7 +102,7 @@ export function Navbar({ t, lang, platformUrl }: NavbarProps) {
           {NAV_LINKS.map(({ labelKey, href }) => (
             <a
               key={href}
-              href={href}
+              href={labelKey === 'pricing' ? `${platformUrl}/pricing` : href}
               onClick={() => setMobileOpen(false)}
               className="block text-base font-medium text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100 py-1"
             >
