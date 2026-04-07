@@ -30,9 +30,14 @@
     "signup": "Sign Up",
     "transform": "Transform",
     "generate": "Generate",
-    "decode": "Decode"
+    "decode": "Decode",
+    "aiPowered": "AI tools"
   },
   "tools": {
+    "badge": {
+      "popular": "Popular",
+      "new": "New"
+    },
     "jsonFormatter": {
       "title": "JSON Formatter",
       "description": "Format, validate & minify JSON with syntax highlighting",
@@ -377,6 +382,24 @@
       "apply": "Apply code",
       "applied": "Referral code applied.",
       "alreadyReferred": "A referral is already linked to your account."
+    },
+    "aiUsage": {
+      "title": "AI tools usage (today)",
+      "description": "Runs used per AI tool for the current UTC day. Pro and Team include unlimited runs.",
+      "planFree": "Free",
+      "planPro": "Pro",
+      "planTeam": "Team",
+      "unlimited": "Unlimited",
+      "today": "today",
+      "upgradeHint": "Need more capacity?",
+      "pricingLink": "View pricing",
+      "tools": {
+        "code_review": "Code review",
+        "readme_gen": "README generator",
+        "commit_gen": "Commit generator",
+        "code_convert": "Code converter",
+        "interview": "Interview prep"
+      }
     }
   },
   "messages": {

@@ -5,9 +5,12 @@ import { generateText } from "ai";
 import { createClient } from "@/lib/supabase/server";
 import { getModel } from "@/lib/ai/provider";
 import { checkLimit, trackUsage } from "@/lib/actions/billing/usage";
+import { extractJsonArray, extractJsonObject } from "@/lib/ai/extract-json";
 
 const schema = z.object({
   changes: z.string().min(10).max(50000),
+  context: z.string().max(4000).optional(),
+  style: z.enum(["conventional", "simple", "both"]).default("both"),
 });
 
 export interface CommitCandidate {
@@ -49,22 +52,61 @@ async function isAiToolsEnabled() {
   return data?.value !== false;
 }
 
+function normalizeCandidates(arr: unknown): CommitCandidate[] {
+  if (!Array.isArray(arr)) return [];
+  return arr
+    .map((item) => item as Record<string, unknown>)
+    .filter(
+      (item) =>
+        typeof item.commit === "string" &&
+        typeof item.prTitle === "string" &&
+        typeof item.prBody === "string"
+    )
+    .slice(0, 3)
+    .map((item) => ({
+      commit: item.commit as string,
+      prTitle: item.prTitle as string,
+      prBody: item.prBody as string,
+    }));
+}
+
 function parseOptions(raw: string): CommitCandidate[] {
   try {
-    const parsed = JSON.parse(raw) as unknown;
-    if (!Array.isArray(parsed)) return [];
-    return parsed
-      .map((item) => item as Record<string, unknown>)
-      .filter((item) => typeof item.commit === "string" && typeof item.prTitle === "string" && typeof item.prBody === "string")
-      .slice(0, 3)
-      .map((item) => ({
-        commit: item.commit as string,
-        prTitle: item.prTitle as string,
-        prBody: item.prBody as string,
-      }));
+    const fromArray = normalizeCandidates(extractJsonArray(raw));
+    if (fromArray.length > 0) return fromArray;
   } catch {
-    return [];
+    /* try object wrapper */
   }
+
+  try {
+    const obj = extractJsonObject(raw) as Record<string, unknown>;
+    for (const key of ["options", "alternatives", "commits", "results", "suggestions"] as const) {
+      const fromKey = normalizeCandidates(obj[key]);
+      if (fromKey.length > 0) return fromKey;
+    }
+  } catch {
+    /* fall through */
+  }
+
+  try {
+    const parsed = JSON.parse(raw.trim()) as unknown;
+    if (Array.isArray(parsed)) return normalizeCandidates(parsed);
+  } catch {
+    /* last resort: substring array */
+  }
+
+  try {
+    const start = raw.indexOf("[");
+    const end = raw.lastIndexOf("]");
+    if (start !== -1 && end > start) {
+      const parsed = JSON.parse(raw.slice(start, end + 1)) as unknown;
+      return normalizeCandidates(parsed);
+    }
+  } catch {
+    /* ignore */
+  }
+
+  return [];
 }
 
 export async function generateCommitAndPr(input: z.infer<typeof schema>): Promise<CommitGenResult> {
@@ -81,11 +123,21 @@ export async function generateCommitAndPr(input: z.infer<typeof schema>): Promis
     const limit = await checkLimit(user.id, "commit_gen");
     if (!limit.allowed) return { success: false, error: "Daily limit exceeded", upgradeRequired: true };
 
+    const styleHint =
+      validated.style === "conventional"
+        ? "Each `commit` must be conventional (type(scope): subject). Keep prTitle/prBody aligned."
+        : validated.style === "simple"
+          ? "Each `commit` must be a short imperative sentence (no conventional prefix). prTitle/prBody still professional."
+          : "Each item: `commit` conventional, and include a second line in prBody starting with 'Simple: ' giving a one-line non-conventional summary.";
+
+    const ctx = validated.context?.trim()
+      ? `\n\nExtra context (PR/issue notes):\n${validated.context.trim()}`
+      : "";
+
     const result = await generateText({
       model: getModel("gemini"),
-      system:
-        "Generate 3 alternatives in strict JSON array format. Each item must have keys: commit, prTitle, prBody. Commit must follow conventional commits (feat/fix/refactor/chore/docs/test).",
-      prompt: `Changes / diff summary:\n${validated.changes}\n\nReturn JSON only.`,
+      system: `Generate 3 alternatives in strict JSON array format. Each item must have keys: commit, prTitle, prBody. ${styleHint}`,
+      prompt: `Changes / diff summary:\n${validated.changes}${ctx}\n\nReturn JSON only.`,
       maxOutputTokens: 1200,
       temperature: 0.4,
     });

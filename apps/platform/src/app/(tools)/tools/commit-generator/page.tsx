@@ -1,31 +1,40 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { ClipboardCopy, Crown, Loader2, Sparkles } from "lucide-react";
+import { ClipboardCopy, Loader2, Sparkles } from "lucide-react";
 import { createCheckout, startProTrial } from "@/lib/actions/billing/subscriptions";
 import { generateCommitAndPr, getCommitGenHistory, type CommitCandidate, type CommitHistoryItem } from "@/lib/actions/tools/commit-gen";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AiToolsUpgradeModal } from "@/components/tools/ai-tools-upgrade-modal";
+import { Label } from "@/components/ui/label";
 
-function CopyBtn({ value }: { value: string }) {
+function CopyBtn({ value, label = "Copy" }: { value: string; label?: string }) {
+  const [copied, setCopied] = useState(false);
   return (
     <Button
       size="sm"
       variant="outline"
       onClick={() => {
-        void navigator.clipboard.writeText(value);
+        void navigator.clipboard.writeText(value).then(() => {
+          setCopied(true);
+          window.setTimeout(() => setCopied(false), 2000);
+        });
       }}
     >
       <ClipboardCopy className="mr-1 h-3.5 w-3.5" />
-      Copy
+      {copied ? "Copied" : label}
     </Button>
   );
 }
 
+type CommitStyle = "conventional" | "simple" | "both";
+
 export default function CommitGeneratorPage() {
   const [changes, setChanges] = useState("");
+  const [context, setContext] = useState("");
+  const [style, setStyle] = useState<CommitStyle>("both");
   const [options, setOptions] = useState<CommitCandidate[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [history, setHistory] = useState<CommitHistoryItem[]>([]);
@@ -40,7 +49,11 @@ export default function CommitGeneratorPage() {
   const onGenerate = () => {
     setError(null);
     startTransition(async () => {
-      const result = await generateCommitAndPr({ changes });
+      const result = await generateCommitAndPr({
+        changes,
+        context: context.trim() || undefined,
+        style,
+      });
       if (!result.success) {
         if (result.upgradeRequired) return setShowUpgrade(true);
         return setError(result.error ?? "Generation failed");
@@ -97,6 +110,33 @@ export default function CommitGeneratorPage() {
                 placeholder="git diff output or plain-text summary..."
                 className="min-h-[220px] w-full rounded-md border border-input bg-background p-3 text-xs"
               />
+              <div className="space-y-1">
+                <Label htmlFor="commit-style" className="text-xs text-muted-foreground">
+                  Commit message style
+                </Label>
+                <select
+                  id="commit-style"
+                  value={style}
+                  onChange={(e) => setStyle(e.target.value as CommitStyle)}
+                  className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+                >
+                  <option value="both">Conventional + simple (in PR body)</option>
+                  <option value="conventional">Conventional only</option>
+                  <option value="simple">Simple (one line, no type prefix)</option>
+                </select>
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="commit-context" className="text-xs text-muted-foreground">
+                  Extra context (optional)
+                </Label>
+                <textarea
+                  id="commit-context"
+                  value={context}
+                  onChange={(e) => setContext(e.target.value)}
+                  placeholder="Ticket link, product intent, breaking changes…"
+                  className="min-h-[80px] w-full rounded-md border border-input bg-background p-3 text-xs"
+                />
+              </div>
               <Button onClick={onGenerate} disabled={!canSubmit || pending}>
                 {pending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
                 Generate 3 alternatives
@@ -141,6 +181,7 @@ export default function CommitGeneratorPage() {
           <Card>
             <CardHeader>
               <CardTitle>History</CardTitle>
+              <CardDescription>Recent runs saved to your account history</CardDescription>
             </CardHeader>
             <CardContent>
               {pending && !historyLoaded ? (
@@ -164,25 +205,15 @@ export default function CommitGeneratorPage() {
         </TabsContent>
       </Tabs>
 
-      <Dialog open={showUpgrade} onOpenChange={setShowUpgrade}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2"><Crown className="h-4 w-4 text-amber-400" /> Upgrade required</DialogTitle>
-            <DialogDescription>You reached your free daily commit generation limit.</DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setShowUpgrade(false)}>Later</Button>
-            <Button onClick={onTrial} disabled={trialPending} variant="secondary">
-              {trialPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              Try Pro Free for 7 Days
-            </Button>
-            <Button onClick={onUpgrade} disabled={upgradePending}>
-              {upgradePending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              Upgrade to Pro
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <AiToolsUpgradeModal
+        open={showUpgrade}
+        onOpenChange={setShowUpgrade}
+        limitDescription="You reached your free daily commit generation limit."
+        isUpgradePending={upgradePending}
+        isTrialPending={trialPending}
+        onUpgrade={onUpgrade}
+        onTrial={onTrial}
+      />
     </div>
   );
 }

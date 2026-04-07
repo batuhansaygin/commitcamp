@@ -1,0 +1,45 @@
+{
+  "common": {
+    "tagline": "Geliştiricilerin gelişime commit attığı yer.",
+    "backButton": "Geri",
+    "loading": "Yükleniyor...",
+    "copy": "Kopyala",
+    "copied": "Kopyalandı!"
+  },
+  "nav": {
+    "tools": "Araçlar",
+    "community": "Topluluk",
+    "login": "Giriş",
+    "signup": "Kayıt ol",
+    "transform": "Dönüştür",
+    "generate": "Üret",
+    "decode": "Çöz",
+    "aiPowered": "AI araçları"
+  },
+  "tools": {
+    "badge": {
+      "popular": "Popüler",
+      "new": "Yeni"
+    }
+  },
+  "settings": {
+    "aiUsage": {
+      "title": "AI araç kullanımı (bugün)",
+      "description": "Geçerli UTC günü için araç başına kullanım. Pro ve Team sınırsız çalıştırma içerir.",
+      "planFree": "Ücretsiz",
+      "planPro": "Pro",
+      "planTeam": "Team",
+      "unlimited": "Sınırsız",
+      "today": "bugün",
+      "upgradeHint": "Daha fazla kotaya mı ihtiyacınız var?",
+      "pricingLink": "Fiyatlandırmayı gör",
+      "tools": {
+        "code_review": "Kod inceleme",
+        "readme_gen": "README üretici",
+        "commit_gen": "Commit üretici",
+        "code_convert": "Kod dönüştürücü",
+        "interview": "Mülakat hazırlığı"
+      }
+    }
+  }
+}

@@ -14,6 +14,7 @@ import {
 import { getSubscription } from "@/lib/actions/billing/subscriptions";
 import { getReferralPanelData } from "@/lib/actions/referral/referral";
 import { SettingsReferral } from "@/components/settings/settings-referral";
+import { UsageStatsWidget } from "@/components/billing/usage-stats-widget";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = { title: "Settings — CommitCamp" };
@@ -94,6 +95,8 @@ export default async function SettingsPage() {
           hasAppliedReferral={referralPanel.hasAppliedReferral}
         />
       ) : null}
+
+      <UsageStatsWidget />
 
       <SettingsAccount email={user.email ?? ""} />
       <SettingsLinkedAccounts

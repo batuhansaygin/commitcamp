@@ -5,6 +5,8 @@ import { Link, usePathname } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { AI_TOOLS_NAV } from "@/lib/config/ai-tools-nav";
 
 interface ToolsSidebarProps {
   open: boolean;
@@ -15,10 +17,12 @@ interface ToolItem {
   href: string;
   icon: string;
   titleKey: string;
+  badgeKey?: "popular" | "new";
 }
 
-const TOOL_GROUPS: { labelKey: string; tools: ToolItem[] }[] = [
+const TOOL_GROUPS: { id: string; labelKey: string; tools: ToolItem[] }[] = [
   {
+    id: "transform",
     labelKey: "transform",
     tools: [
       { href: "/tools/json-formatter", icon: "{ }", titleKey: "jsonFormatter" },
@@ -27,6 +31,7 @@ const TOOL_GROUPS: { labelKey: string; tools: ToolItem[] }[] = [
     ],
   },
   {
+    id: "generate-util",
     labelKey: "generate",
     tools: [
       { href: "/tools/color-converter", icon: "◆", titleKey: "colorConverter" },
@@ -35,6 +40,7 @@ const TOOL_GROUPS: { labelKey: string; tools: ToolItem[] }[] = [
     ],
   },
   {
+    id: "decode",
     labelKey: "decode",
     tools: [
       { href: "/tools/jwt-decoder", icon: "🔑", titleKey: "jwtDecoder" },
@@ -42,17 +48,14 @@ const TOOL_GROUPS: { labelKey: string; tools: ToolItem[] }[] = [
     ],
   },
   {
-    labelKey: "generate",
-    tools: [{ href: "/tools/code-review", icon: "AI", titleKey: "codeReview" }],
-  },
-  {
-    labelKey: "generate",
-    tools: [
-      { href: "/tools/readme-generator", icon: "MD", titleKey: "readmeGenerator" },
-      { href: "/tools/commit-generator", icon: "PR", titleKey: "commitGenerator" },
-      { href: "/tools/code-converter", icon: "↔", titleKey: "codeConverter" },
-      { href: "/tools/interview-prep", icon: "Q?", titleKey: "interviewPrep" },
-    ],
+    id: "ai",
+    labelKey: "aiPowered",
+    tools: AI_TOOLS_NAV.map((item) => ({
+      href: item.href,
+      icon: item.iconGlyph,
+      titleKey: item.titleKey,
+      badgeKey: item.badge,
+    })),
   },
 ];
 
@@ -87,7 +90,7 @@ export function ToolsSidebar({ open, onClose }: ToolsSidebarProps) {
 
         <nav className="flex-1 overflow-y-auto p-3">
           {TOOL_GROUPS.map((group) => (
-            <div key={group.labelKey} className="mb-4">
+            <div key={group.id} className="mb-4">
               <span className="mb-1 block px-3 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                 {tNav(group.labelKey)}
               </span>
@@ -105,10 +108,20 @@ export function ToolsSidebar({ open, onClose }: ToolsSidebarProps) {
                         : "text-muted-foreground hover:bg-accent hover:text-foreground"
                     )}
                   >
-                    <span className="flex h-7 w-7 items-center justify-center rounded-md bg-muted text-xs font-mono">
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-muted text-xs font-mono">
                       {tool.icon}
                     </span>
-                    <span>{tTools(`${tool.titleKey}.title`)}</span>
+                    <span className="flex min-w-0 flex-1 items-center justify-between gap-2">
+                      <span className="truncate">{tTools(`${tool.titleKey}.title`)}</span>
+                      {tool.badgeKey ? (
+                        <Badge
+                          variant="secondary"
+                          className="shrink-0 px-1.5 py-0 text-[9px] font-medium uppercase tracking-wide"
+                        >
+                          {tTools(`badge.${tool.badgeKey}`)}
+                        </Badge>
+                      ) : null}
+                    </span>
                   </Link>
                 );
               })}
@@ -118,10 +131,10 @@ export function ToolsSidebar({ open, onClose }: ToolsSidebarProps) {
 
         <div className="border-t border-border p-4 text-center">
           <p className="text-[10px] font-medium text-muted-foreground">
-            100% Client-Side
+            Classic tools run locally
           </p>
           <p className="text-[9px] text-muted-foreground/60">
-            No data is sent to any server
+            AI tools use CommitCamp with daily limits on Free
           </p>
         </div>
       </aside>

@@ -1,28 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "@/i18n/navigation";
-import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
-import { Settings, LogOut, Shield } from "lucide-react";
+import { Settings, Shield } from "lucide-react";
 import { useUser } from "@/components/providers/user-provider";
+import { UserMenuSignOut } from "@/components/auth/user-menu-sign-out";
 
 export function UserMenu() {
-  const router = useRouter();
   const { user, profile, isLoading } = useUser();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [signingOut, setSigningOut] = useState(false);
-
-  const handleSignOut = async () => {
-    setSigningOut(true);
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    setMenuOpen(false);
-    setSigningOut(false);
-    router.push("/");
-    router.refresh();
-  };
 
   // Show skeleton avatar while loading (no flash, no layout shift)
   if (isLoading) {
@@ -128,14 +115,7 @@ export function UserMenu() {
 
             <div className="my-1 border-t border-border" />
 
-            <button
-              onClick={handleSignOut}
-              disabled={signingOut}
-              className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
-            >
-              <LogOut className="h-4 w-4" />
-              {signingOut ? "Signing out..." : "Sign Out"}
-            </button>
+            <UserMenuSignOut />
           </div>
         </>
       )}

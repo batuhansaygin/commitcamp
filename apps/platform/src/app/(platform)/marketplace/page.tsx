@@ -36,12 +36,25 @@ export default async function MarketplacePage({ searchParams }: PageProps) {
     minRating: params.minRating ? Number(params.minRating) : undefined,
   });
 
+  const hasActiveFilters = Boolean(
+    params.q?.trim() ||
+      params.type ||
+      params.minPrice ||
+      params.maxPrice ||
+      params.minRating,
+  );
+
   return (
     <div className="mx-auto w-full max-w-6xl space-y-5">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold">Marketplace</h1>
-          <p className="text-sm text-muted-foreground">Buy and sell developer digital products.</p>
+          <p className="text-sm text-muted-foreground">
+            Buy and sell developer digital products.
+            {products.length > 0 ? (
+              <span className="ml-1 text-foreground">· {products.length} listed</span>
+            ) : null}
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <Link href="/marketplace/my-purchases"><Button variant="outline" size="sm">My Purchases</Button></Link>
@@ -65,23 +78,41 @@ export default async function MarketplacePage({ searchParams }: PageProps) {
         <Button type="submit">Filter</Button>
       </form>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {products.map((p) => (
-          <Link key={p.id} href={`/marketplace/${p.slug}`} className="block">
-            <Card className="h-full transition hover:border-primary/40">
-              <CardContent className="space-y-2 p-4">
-                <p className="text-xs uppercase text-muted-foreground">{p.type}</p>
-                <h3 className="line-clamp-2 font-semibold">{p.title}</h3>
-                <p className="line-clamp-2 text-xs text-muted-foreground">{p.description}</p>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="font-semibold">${(p.price_cents / 100).toFixed(2)}</span>
-                  <span className="text-xs text-muted-foreground">⭐ {Number(p.rating_avg ?? 0).toFixed(1)}</span>
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
-      </div>
+      {products.length === 0 ? (
+        <Card>
+          <CardContent className="space-y-2 py-12 text-center text-sm text-muted-foreground">
+            <p className="font-medium text-foreground">No products found</p>
+            <p>
+              {hasActiveFilters
+                ? "Try broadening your search or clearing filters."
+                : "Nothing is published yet. Check back soon or list your own product."}
+            </p>
+            {hasActiveFilters ? (
+              <Button variant="outline" size="sm" className="mt-2" asChild>
+                <Link href="/marketplace">Clear filters</Link>
+              </Button>
+            ) : null}
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {products.map((p) => (
+            <Link key={p.id} href={`/marketplace/${p.slug}`} className="block">
+              <Card className="h-full transition hover:border-primary/40">
+                <CardContent className="space-y-2 p-4">
+                  <p className="text-xs uppercase text-muted-foreground">{p.type}</p>
+                  <h3 className="line-clamp-2 font-semibold">{p.title}</h3>
+                  <p className="line-clamp-2 text-xs text-muted-foreground">{p.description}</p>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="font-semibold">${(p.price_cents / 100).toFixed(2)}</span>
+                    <span className="text-xs text-muted-foreground">⭐ {Number(p.rating_avg ?? 0).toFixed(1)}</span>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

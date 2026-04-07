@@ -6,9 +6,12 @@ import { createClient } from "@/lib/supabase/server";
 import { getModel } from "@/lib/ai/provider";
 import { checkLimit, trackUsage } from "@/lib/actions/billing/usage";
 
+const focusAreaSchema = z.enum(["bugs", "performance", "security", "style"]);
+
 const codeReviewSchema = z.object({
   code: z.string().min(10).max(50000),
   language: z.string().min(1).max(50).optional(),
+  focusAreas: z.array(focusAreaSchema).min(1).max(4).default(["bugs", "performance", "security", "style"]),
 });
 
 export interface AnalyzeCodeResult {
@@ -76,14 +79,18 @@ export async function analyzeCode(input: z.infer<typeof codeReviewSchema>): Prom
       };
     }
 
+    const focus = validated.focusAreas;
+    const focusLine = `Prioritize these areas: ${focus.join(", ")}. Still mention other serious issues if you find them.`;
+
     const prompt = [
       `Review the following ${validated.language ?? "source"} code.`,
+      focusLine,
       "Return markdown with these sections:",
       "1) Grade: one letter A/B/C/D/F",
       "2) Bugs",
       "3) Security",
       "4) Performance",
-      "5) Best practices",
+      "5) Style & best practices",
       "6) Suggested improvements",
       "",
       validated.code,

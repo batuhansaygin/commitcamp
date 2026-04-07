@@ -8,7 +8,11 @@ import { checkLimit, trackUsage } from "@/lib/actions/billing/usage";
 
 const schema = z.object({
   projectName: z.string().min(2).max(120),
+  language: z.string().min(1).max(40).default("TypeScript"),
   input: z.string().min(10).max(50000),
+  includeInstallation: z.boolean().default(true),
+  includeUsageExamples: z.boolean().default(true),
+  includeApiDocs: z.boolean().default(false),
 });
 
 export interface ReadmeResult {
@@ -58,11 +62,21 @@ export async function generateReadme(input: z.infer<typeof schema>): Promise<Rea
     const limit = await checkLimit(user.id, "readme_gen");
     if (!limit.allowed) return { success: false, error: "Daily limit exceeded", upgradeRequired: true };
 
+    const sections: string[] = [
+      "Badges (shields.io style where appropriate)",
+      "Title & description",
+      "Features",
+    ];
+    if (validated.includeInstallation) sections.push("Installation");
+    if (validated.includeUsageExamples) sections.push("Usage (with code blocks)");
+    if (validated.includeApiDocs) sections.push("API documentation");
+    sections.push("Contributing", "License (MIT unless context suggests otherwise)");
+
     const result = await generateText({
       model: getModel("gemini"),
       system:
-        "You are an expert technical writer. Output clean markdown only. Include sections: Badges, Description, Installation, Usage, API, Contributing, License.",
-      prompt: `Project name: ${validated.projectName}\n\nProject context/code:\n${validated.input}`,
+        "You are an expert technical writer. Output clean, professional GitHub-flavored markdown only. No preamble or closing chit-chat.",
+      prompt: `Project name: ${validated.projectName}\nPrimary language/stack: ${validated.language}\n\nInclude these sections (use ## headings): ${sections.join("; ")}.\n\nProject context / code / notes:\n${validated.input}`,
       maxOutputTokens: 2000,
       temperature: 0.3,
     });

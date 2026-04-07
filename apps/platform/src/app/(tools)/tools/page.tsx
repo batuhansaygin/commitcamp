@@ -23,7 +23,6 @@ import {
   ArrowRight,
   Zap,
   Shield,
-  Wifi,
   Package,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -32,7 +31,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Developer Tools — CommitCamp",
   description:
-    "Free, browser-based developer tools. Format JSON, test regex, encode/decode, generate UUIDs, and more.",
+    "Eight in-browser utilities plus five AI tools for code review, READMEs, commits, conversion, and interview prep.",
 };
 
 interface PageProps {
@@ -194,9 +193,9 @@ const CATEGORIES = ["All", "Format", "Validate", "Encode", "Decode", "Convert", 
 
 const STATS = [
   { icon: Package, value: "13", label: "Tools" },
-  { icon: Zap, value: "100%", label: "Free" },
-  { icon: Wifi, value: "0", label: "Server calls" },
-  { icon: Shield, value: "Private", label: "No data stored" },
+  { icon: Zap, value: "8", label: "In-browser" },
+  { icon: Bot, value: "5", label: "AI-powered" },
+  { icon: Shield, value: "Secure", label: "Auth & limits" },
 ];
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -227,7 +226,7 @@ export default async function ToolsPage({ params }: PageProps) {
         <div className="relative space-y-4 max-w-2xl">
           <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
             <Zap className="h-3 w-3" />
-            All tools run 100% in your browser
+            Classic tools in-browser · AI tools with smart limits
           </div>
 
           <h1 className="text-3xl font-black leading-tight tracking-tight sm:text-4xl md:text-5xl">
@@ -236,8 +235,8 @@ export default async function ToolsPage({ params }: PageProps) {
           </h1>
 
           <p className="text-sm text-muted-foreground sm:text-base max-w-lg leading-relaxed">
-            Free, fast, and privacy-first tools built for developers. No
-            account required, no data sent to any server.
+            Eight utilities run entirely in your browser. Five AI assistants help with reviews, docs,
+            commits, and more—sign in to use them; free plans include daily usage caps.
           </p>
 
           {/* Stats row */}

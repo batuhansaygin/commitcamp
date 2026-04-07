@@ -2,14 +2,15 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import {
+  AI_TOOLS_IN_ORDER,
+  type TodayAiUsageRow,
+  type ToolType,
+} from "@/lib/types/billing-usage";
 
 type Plan = "free" | "pro" | "team";
-type ToolName =
-  | "code_review"
-  | "readme_gen"
-  | "commit_gen"
-  | "code_convert"
-  | "interview";
+
+type ToolName = ToolType;
 
 interface LimitResult {
   allowed: boolean;
@@ -112,4 +113,35 @@ export async function getUsageStats() {
 
   if (error) throw new Error(error.message);
   return data ?? [];
+}
+
+/** Per-tool daily usage and limits for the signed-in user (Settings widget). */
+export async function getTodayAiUsageSummary(): Promise<{
+  plan: Plan;
+  items: TodayAiUsageRow[];
+} | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const results = await Promise.all(
+    AI_TOOLS_IN_ORDER.map((tool) => checkLimit(user.id, tool))
+  );
+
+  const plan = results[0]?.plan ?? "free";
+  const items: TodayAiUsageRow[] = AI_TOOLS_IN_ORDER.map((tool, i) => {
+    const r = results[i];
+    const unlimited = r.limit === Number.MAX_SAFE_INTEGER;
+    return {
+      tool,
+      used: r.used,
+      limit: unlimited ? 0 : r.limit,
+      remaining: unlimited ? Number.MAX_SAFE_INTEGER : r.remaining,
+      unlimited,
+    };
+  });
+
+  return { plan, items };
 }

@@ -1,20 +1,23 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { CheckCircle2, Crown, Loader2, ShieldCheck, TriangleAlert } from "lucide-react";
+import { CheckCircle2, ClipboardCopy, Loader2, ShieldCheck } from "lucide-react";
 import { analyzeCode, getReviewHistory, type ReviewHistoryItem } from "@/lib/actions/tools/code-review";
 import { createCheckout, startProTrial } from "@/lib/actions/billing/subscriptions";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { AiToolsUpgradeModal } from "@/components/tools/ai-tools-upgrade-modal";
+import { cn } from "@/lib/utils";
+
+type FocusArea = "bugs" | "performance" | "security" | "style";
+
+const FOCUS_OPTIONS: { id: FocusArea; label: string }[] = [
+  { id: "bugs", label: "Bugs" },
+  { id: "performance", label: "Performance" },
+  { id: "security", label: "Security" },
+  { id: "style", label: "Style" },
+];
 
 const LANGUAGES = [
   "TypeScript",
@@ -45,6 +48,12 @@ function gradeClass(grade: string) {
 export default function CodeReviewPage() {
   const [code, setCode] = useState("");
   const [language, setLanguage] = useState("TypeScript");
+  const [focusAreas, setFocusAreas] = useState<FocusArea[]>([
+    "bugs",
+    "performance",
+    "security",
+    "style",
+  ]);
   const [report, setReport] = useState<string | null>(null);
   const [grade, setGrade] = useState<"A" | "B" | "C" | "D" | "F" | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -54,13 +63,22 @@ export default function CodeReviewPage() {
   const [isPending, startTransition] = useTransition();
   const [isUpgradePending, startUpgradeTransition] = useTransition();
   const [isTrialPending, startTrialTransition] = useTransition();
+  const [copiedReport, setCopiedReport] = useState(false);
 
   const canSubmit = useMemo(() => code.trim().length >= 10, [code]);
+
+  const copyReport = () => {
+    if (!report) return;
+    void navigator.clipboard.writeText(report).then(() => {
+      setCopiedReport(true);
+      window.setTimeout(() => setCopiedReport(false), 2000);
+    });
+  };
 
   const runReview = () => {
     setError(null);
     startTransition(async () => {
-      const result = await analyzeCode({ code, language });
+      const result = await analyzeCode({ code, language, focusAreas });
       if (!result.success) {
         if (result.upgradeRequired) {
           setShowUpgrade(true);
@@ -136,6 +154,35 @@ export default function CodeReviewPage() {
                 ))}
               </select>
 
+              <div className="space-y-2">
+                <span className="block text-xs font-medium text-muted-foreground">Focus areas</span>
+                <div className="flex flex-wrap gap-2">
+                  {FOCUS_OPTIONS.map(({ id, label }) => {
+                    const on = focusAreas.includes(id);
+                    return (
+                      <Button
+                        key={id}
+                        type="button"
+                        size="sm"
+                        variant={on ? "default" : "outline"}
+                        className={cn("h-8 text-xs", on && "ring-2 ring-primary/30")}
+                        onClick={() => {
+                          setFocusAreas((prev) => {
+                            if (prev.includes(id)) {
+                              const next = prev.filter((x) => x !== id);
+                              return next.length ? next : prev;
+                            }
+                            return [...prev, id];
+                          });
+                        }}
+                      >
+                        {label}
+                      </Button>
+                    );
+                  })}
+                </div>
+              </div>
+
               <textarea
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
@@ -157,9 +204,17 @@ export default function CodeReviewPage() {
           </Card>
 
           <Card>
-            <CardHeader>
-              <CardTitle>Result</CardTitle>
-              <CardDescription>Structured AI review report</CardDescription>
+            <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="space-y-1">
+                <CardTitle>Result</CardTitle>
+                <CardDescription>AI review report (markdown)</CardDescription>
+              </div>
+              {report ? (
+                <Button type="button" variant="outline" size="sm" className="shrink-0" onClick={copyReport}>
+                  <ClipboardCopy className="mr-1.5 h-3.5 w-3.5" />
+                  {copiedReport ? "Copied" : "Copy report"}
+                </Button>
+              ) : null}
             </CardHeader>
             <CardContent className="space-y-3">
               {grade ? (
@@ -184,7 +239,7 @@ export default function CodeReviewPage() {
           <Card>
             <CardHeader>
               <CardTitle>Your review history</CardTitle>
-              <CardDescription>Saved from tool_history (`tool_slug = code-review`)</CardDescription>
+              <CardDescription>Recent runs saved to your account history</CardDescription>
             </CardHeader>
             <CardContent>
               {isPending && !historyLoaded ? (
@@ -211,36 +266,15 @@ export default function CodeReviewPage() {
         </TabsContent>
       </Tabs>
 
-      <Dialog open={showUpgrade} onOpenChange={setShowUpgrade}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Crown className="h-4 w-4 text-amber-400" />
-              Free limit reached
-            </DialogTitle>
-            <DialogDescription>
-              You reached your daily code review limit. Upgrade to Pro for unlimited AI reviews.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setShowUpgrade(false)}>
-              Later
-            </Button>
-            <Button onClick={handleStartTrial} disabled={isTrialPending} variant="secondary">
-              {isTrialPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              Try Pro Free for 7 Days
-            </Button>
-            <Button onClick={handleUpgrade} disabled={isUpgradePending}>
-              {isUpgradePending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <TriangleAlert className="mr-2 h-4 w-4" />
-              )}
-              Upgrade to Pro
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <AiToolsUpgradeModal
+        open={showUpgrade}
+        onOpenChange={setShowUpgrade}
+        limitDescription="You reached your daily code review limit. Upgrade to Pro for unlimited AI reviews."
+        isUpgradePending={isUpgradePending}
+        isTrialPending={isTrialPending}
+        onUpgrade={handleUpgrade}
+        onTrial={handleStartTrial}
+      />
     </div>
   );
 }
